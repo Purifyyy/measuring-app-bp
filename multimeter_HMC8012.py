@@ -81,7 +81,7 @@ class DigitalMultimeter(InstrumentDriver):
 
     def measure_temperature(self, probe_type, sensor_type):
         value = self.manager.query("MEASure:TEMPerature? " + probe_type + ',' + sensor_type)
-        return value.split(',')
+        return value
 
     def measure_voltage_ac(self, measurement_range):
         value = self.manager.query("MEASure[:VOLTage]:AC? " + measurement_range)

@@ -13,7 +13,7 @@ class InstrumentDriver():
         return self.manager.query("*IDN?")
 
     def tst(self):
-        self.manager.query("*TST?")
+        return self.manager.query("*TST?")
 
     def rst(self):
         self.manager.write("*RST")
