@@ -1,10 +1,12 @@
 import pyvisa
 
+
 class InstrumentDriver():
 
-    def __init__(self, port):
+    def __init__(self, address):
         rm = pyvisa.ResourceManager()
-        self.manager = rm.open_resource(port)
+        # Podla HMC804x/HMC8012 manualu, 1.1.2 Ethernet (LAN) Interface
+        self.manager = rm.open_resource('TCPIP::' + address + '::5025::SOCKET')
 
     @property
     def idn(self):
@@ -21,5 +23,3 @@ class InstrumentDriver():
 
     def remote(self):
         self.manager.write("SYSTem:REMote")
-
-
