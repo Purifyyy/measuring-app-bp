@@ -6,42 +6,42 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
     def __init__(self, address):
         super(DigitalMultimeterHMC8012, self).__init__(address)
 
-    def calc_average_mean(self):
+    def calculate_average_average(self):
         # CALCulate:AVERage:AVERage?
         # Returns the mean value of the statistic function depending on the activated measurement function
-        value = self.manager.query("CALCulate:AVERage:AVERage?")
+        value = self.manager.query("CALC:AVER:AVER?")
         return value
 
-    def calc_average_clear(self):
+    def calculate_average_clear(self):
         # CALCulate:AVERage:CLEar
         # Resets all statistic function values
-        self.manager.wait("CALCulate:AVERage:CLEar")
+        self.manager.write("CALC:AVER:CLE")
 
-    def calc_average_count(self):
+    def calculate_average_count(self):
         # CALCulate:AVERage:COUNt?
         # Returns the number of statistic measurement counts
-        value = self.manager.query("CALCulate:AVERage:COUNt?")
+        value = self.manager.query("CALC:AVER:COUN?")
         return value
 
-    def calc_average_max(self):
+    def calculate_average_maximum(self):
         # CALCulate:AVERage:MAXimum?
         # Returns the maximum value of the statistic function depending on the activated measurement function
-        value = self.manager.query("CALCulate:AVERage:MAXimum?")
+        value = self.manager.query("CALC:AVER:MAX?")
         return value
 
-    def calc_average_min(self):
+    def calculate_average_minimum(self):
         # CALCulate:AVERage:MINimum?
         # Returns the minimum value of the statistic function depending on the activated measurement function
-        value = self.manager.query("CALCulate:AVERage:MINimum?")
+        value = self.manager.query("CALC:AVER:MIN?")
         return value
 
-    def calc_average_ptpeak(self):
+    def calculate_average_ptpeak(self):
         # CALCulate:AVERage:PTPeak?
         # Returns the peak to peak value of the statistic function depending on the activated measurement function
-        value = self.manager.query("CALCulate:AVERage:PTPeak?")
+        value = self.manager.query("CALC:AVER:PTP?")
         return value
 
-    def get_calc_function(self):
+    def get_calculate_function(self):
         # CALCulate:FUNCtion?
         # Returns the calculation function
         #  NULL: Null function
@@ -50,10 +50,10 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  AVER: Statistic measurements
         #  LIM: Limit lines
         #  POW: DC power value (available in DC V/DC I or DC I/DC V mode)
-        value = self.manager.query("CALCulate:FUNCtion?")
+        value = self.manager.query("CALC:FUNC?")
         return value
 
-    def set_calc_function(self, measurement_function='NULL'):
+    def set_calculate_function(self, measurement_function='NULL'):
         # CALCulate:FUNCtion {NULL | DB | DBM | AVERage | LIMit | POWer}
         # Sets the calculation function, but does not activate the function
         #  NULL: Null function
@@ -62,18 +62,18 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  AVERage: Statistic measurements
         #  LIMit: Limit lines
         #  POWer: Power display
-        self.manager.write("CALCulate:FUNCtion " + str(measurement_function))  # Predpokladam ze write, Usage v manualy nieje
+        self.manager.write("CALC:FUNC " + str(measurement_function))
 
-    def get_calc_null_offset(self, parameter='MINimum'):
+    def get_calculate_null_offset(self, parameter='MIN'):
         # CALCulate:NULL:OFFSet? {MINimum | MAXimum}
         # Returns the maximum null value depending on the activated measurement function
-        value = self.manager.query("CALCulate:NULL:OFFSet? " + str(parameter))
+        value = self.manager.query("CALC:NULL:OFFS? " + str(parameter))
         return value
 
-    def set_calc_null_offset(self, parameter='MINimum'):
+    def set_calculate_null_offset(self, parameter='MIN'):
         # CALCulate:NULL:OFFSet {<Value> | MINimum | MAXimum}
         # Sets the maximum null value depending on the activated measurement function
-        self.manager.write("CALCulate:FUNCtion " + str(parameter))
+        self.manager.write("CALC:NULL:OFF " + str(parameter))
 
     def measure_capacitance(self, measurement_range='AUTO'):
         # MEASure:CAPacitance? [{<Range>| AUTO | MIN | MAX | DEF}]
@@ -83,14 +83,14 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 5nF range selection
         #  MAX: 500µF range selection
         #  DEF: 5nF range selection
-        value = self.manager.query("MEASure:CAPacitance? " + str(measurement_range))
+        value = self.manager.query("MEAS:CAP? " + str(measurement_range))
         return value
 
     def measure_continuity(self):
         # MEASure:CONTinuity?
         # Configures the instrument for continuity measurements
         # Returns a single reading, the range is fixed (4000Ω)
-        value = self.manager.query("MEASure:CONTinuity?")
+        value = self.manager.query("MEAS:CONT?")
         return value
 
     def measure_current_ac(self, measurement_range='AUTO'):
@@ -101,7 +101,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 20mA range selection
         #  MAX: 10A range selection
         #  DEF: 20mA range selection
-        value = self.manager.query("MEASure:CURRent:AC? " + str(measurement_range))
+        value = self.manager.query("MEAS:CURR:AC? " + str(measurement_range))
         return value
 
     def measure_current_dc(self, measurement_range='AUTO'):
@@ -112,14 +112,14 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 20mA range selection
         #  MAX: 10A range selection
         #  DEF: 20mA range selection
-        value = self.manager.query("MEASure:CURRent:DC? " + str(measurement_range))
+        value = self.manager.query("MEAS:CURR:DC? " + str(measurement_range))
         return value
 
     def measure_diode(self):
         # MEASure:DIODe?
         # Configures the instrument for diode tests
         # Returns a single reading, the range is fixed (5V)
-        value = self.manager.query("MEASure:DIODe?")
+        value = self.manager.query("MEAS:DIOD?")
         return value
 
     def measure_frequency_current(self, measurement_range='AUTO'):
@@ -131,7 +131,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 20mA range selection
         #  MAX: 10A range selection
         #  DEFault: 20mA range selection
-        value = self.manager.query("MEASure:FREQuency:CURRent " + str(measurement_range))
+        value = self.manager.query("MEAS:FREQ:CURR " + str(measurement_range))
         return value
 
     def measure_frequency_voltage(self, measurement_range='AUTO'):
@@ -142,7 +142,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 400mV range selection
         #  MAX: 750V range selection
         #  DEFault: 400mV range selection
-        value = self.manager.query("MEASure:FREQuency[:VOLTAGE]? " + str(measurement_range))
+        value = self.manager.query("MEAS:FREQ? " + str(measurement_range))
         return value
 
     def measure_fresistance(self, measurement_range='AUTO'):
@@ -153,7 +153,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN:	400Ω
         #  MAX:	4MΩ
         #  DEF:	400Ω
-        value = self.manager.query("MEASure:FRESistance? " + str(measurement_range))
+        value = self.manager.query("MEAS:FRES? " + str(measurement_range))
         return value
 
     def measure_resistance(self, measurement_range='AUTO'):
@@ -164,7 +164,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN:	400Ω range selection
         #  MAX: 250MΩ range selection
         #  DEFault: 400Ω range selection
-        value = self.manager.query("MEASure:RESistance? " + str(measurement_range))
+        value = self.manager.query("MEAS:RES? " + str(measurement_range))
         return value
 
     def measure_temperature(self, probe_type='DEF', sensor_type='DEF'):
@@ -172,7 +172,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         # Configures the instrument for temperature measurements
         #  <Probe_Type> FRTD|RTD|DEF:RTD
         #  <Type> PT100|PT500|PT1000|DEF:PT100
-        value = self.manager.query("MEASure:TEMPerature? " + str(probe_type) + ',' + str(sensor_type))
+        value = self.manager.query("MEAS:TEMP? " + str(probe_type) + ',' + str(sensor_type))
         return value
 
     def measure_voltage_ac(self, measurement_range='AUTO'):
@@ -183,7 +183,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 400mV range selection
         #  MAX: 750V range selection
         #  DEF: 400mV range selection
-        value = self.manager.query("MEASure[:VOLTage]:AC? " + str(measurement_range))
+        value = self.manager.query("MEAS:AC? " + str(measurement_range))
         return value
 
     def measure_voltage_dc(self, measurement_range='AUTO'):
@@ -194,7 +194,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 400mV range selection
         #  MAX: 750V range selection
         #  DEF: 400mV range selection
-        value = self.manager.query("MEASure[:VOLTage][:DC]? " + str(measurement_range))
+        value = self.manager.query("MEAS? " + str(measurement_range))
         return value
 
     def get_temperature_unit(self):
@@ -203,7 +203,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  C: °C is activated
         #  K: Kelvins is activated
         #  F: °F is activated
-        value = self.manager.query("UNIT:TEMPerature?")
+        value = self.manager.query("UNIT:TEMP?")
         return value
 
     def set_temperature_unit(self, temperature_unit='C'):
@@ -212,4 +212,4 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  C: °C
         #  K: Kelvins
         #  F: °F
-        self.manager.write("UNIT:TEMPerature " + str(temperature_unit))  # Predpokladam ze write, v manualy nieje Usage
+        self.manager.write("UNIT:TEMP " + str(temperature_unit))
