@@ -12,6 +12,22 @@ class InstrumentDriver:
         # TCPIP[board]::host address::port::SOCKET
         self.manager = rm.open_resource('TCPIP::' + str(address) + '::5025::SOCKET')
 
+        # Odporucane pyvisa manualom, uvidim ci bude treba
+        # self.read_termination = '\n'
+        # self.write_termination = '\n'
+
+        # HAMEG,‹device type›,‹serial number›,‹firmwareversion›
+        # Example: HAMEG,HMC8012,12345,01.000
+        self.identification = (self.idn()).replace(",", " ")
+
+    @property
+    def identification(self):
+        return self._identification
+
+    @identification.setter
+    def identification(self, value):
+        self._identification = value
+
     def idn(self):
         # *IDN?
         # Returns the instrument identification string
@@ -37,5 +53,3 @@ class InstrumentDriver:
         # SYSTem:REMote
         # Sets the system to remote state, the front panel control is locked
         self.manager.write("SYST:REM")
-
-
