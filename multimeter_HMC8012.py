@@ -6,6 +6,17 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
     def __init__(self, address):
         super(DigitalMultimeterHMC8012, self).__init__(address)
 
+    # def toggle_calculate_function(self, parameter='ON'):
+    #     # CALCulate[:STATe] {OFF | ON}
+    #     # Turns with the CALC FUNC command selected calculation function ON or OFF
+    #     self.manager.write("CALC " + str(parameter))
+    #
+    # def calculate_function_state(self):
+    #     # CALCulate[:STATe]?
+    #     # Returns the state (ON/OFF) of the CALC FUNC command selected calculation function
+    #     value = self.manager.query("CALC?")
+    #     return value
+
     def calculate_average_average(self):
         # CALCulate:AVERage:AVERage?
         # Returns the mean value of the statistic function depending on the activated measurement function
@@ -167,11 +178,12 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         value = self.manager.query("MEAS:RES? " + str(measurement_range))
         return value
 
-    def measure_temperature(self, probe_type='DEF', sensor_type='DEF'):
+    def measure_temperature(self, probe_type='DEF', sensor_type='DEF', unit='C'):
         # MEASure:TEMPerature? [{<Probe_Type>| DEF}[,{<Type>| DEF}]
         # Configures the instrument for temperature measurements
         #  <Probe_Type> FRTD|RTD|DEF:RTD
         #  <Type> PT100|PT500|PT1000|DEF:PT100
+        self.set_temperature_unit(unit)
         value = self.manager.query("MEAS:TEMP? " + str(probe_type) + ',' + str(sensor_type))
         return value
 

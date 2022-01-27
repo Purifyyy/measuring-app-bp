@@ -10,7 +10,8 @@ class InstrumentDriver:
         # ASRL[0]::host address::serial port::INSTR
         # TCPIP[board]::host address[::LAN device name][::INSTR]
         # TCPIP[board]::host address::port::SOCKET
-        self.manager = rm.open_resource('TCPIP::' + str(address) + '::5025::SOCKET')
+        # self.manager = rm.open_resource('TCPIP::' + str(address) + '::5025::SOCKET')
+        self.manager = rm.open_resource(address)
 
         # Odporucane pyvisa manualom, uvidim ci bude treba
         # self.read_termination = '\n'
@@ -18,20 +19,15 @@ class InstrumentDriver:
 
         # HAMEG,‹device type›,‹serial number›,‹firmwareversion›
         # Example: HAMEG,HMC8012,12345,01.000
-        self.identification = (self.idn()).replace(",", " ")
+        self.idn = ((self.manager.query("*IDN?")).split(","))[1]
 
     @property
-    def identification(self):
+    def idn(self):
         return self._identification
 
-    @identification.setter
-    def identification(self, value):
+    @idn.setter
+    def idn(self, value):
         self._identification = value
-
-    def idn(self):
-        # *IDN?
-        # Returns the instrument identification string
-        return self.manager.query("*IDN?")
 
     def tst(self):
         # *TST?
