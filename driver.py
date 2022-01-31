@@ -5,9 +5,15 @@ def exception_handler(func):
     def inner(*args):
         try:
             result = func(*args)
+            if func.__doc__ == "Query":
+                if not result[0]:
+                    return False, result[1]
+                return True, result
+            if result is None:
+                return True, func.__name__
             return result
         except pyvisa.VisaIOError:
-            return func.__name__ + " failed"
+            return False, func.__doc__ + " failed" + " (" + func.__name__ + ")"
     return inner
 
 
@@ -30,7 +36,7 @@ class InstrumentDriver:
         # HAMEG,‹device type›,‹serial number›,‹firmwareversion›
         # Example: HAMEG,HMC8012,12345,01.000
         self.idn = ((self.manager.query("*IDN?")).split(","))[1]
-    
+
     @property
     def idn(self):
         return self._identification
@@ -38,9 +44,10 @@ class InstrumentDriver:
     @idn.setter
     def idn(self, value):
         self._identification = value
-    
+
     @exception_handler
     def tst(self):
+        """Query"""
         # *TST?
         # Triggers self-tests of the instrument and returns an error code in decimal form
         # „0“ indicates no errors occured
@@ -48,18 +55,21 @@ class InstrumentDriver:
 
     @exception_handler
     def rst(self):
+        """Write"""
         # *RST
         # Sets the instrument to a defined default status
         self.manager.write("*RST")
 
     @exception_handler
     def local(self):
+        """Write"""
         # SYSTem:LOCal
         # Sets the system to front panel control, the front panel control is unlocked
         self.manager.write("SYST:LOC")
 
     @exception_handler
     def remote(self):
+        """Write"""
         # SYSTem:REMote
         # Sets the system to remote state, the front panel control is locked
         self.manager.write("SYST:REM")

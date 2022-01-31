@@ -19,6 +19,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def calculate_average_average(self):
+        """Query"""
         # CALCulate:AVERage:AVERage?
         # Returns the mean value of the statistic function depending on the activated measurement function
         value = self.manager.query("CALC:AVER:AVER?")
@@ -26,12 +27,14 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def calculate_average_clear(self):
+        """Write"""
         # CALCulate:AVERage:CLEar
         # Resets all statistic function values
         self.manager.write("CALC:AVER:CLE")
 
     @exception_handler
     def calculate_average_count(self):
+        """Query"""
         # CALCulate:AVERage:COUNt?
         # Returns the number of statistic measurement counts
         value = self.manager.query("CALC:AVER:COUN?")
@@ -39,6 +42,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def calculate_average_maximum(self):
+        """Query"""
         # CALCulate:AVERage:MAXimum?
         # Returns the maximum value of the statistic function depending on the activated measurement function
         value = self.manager.query("CALC:AVER:MAX?")
@@ -46,6 +50,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def calculate_average_minimum(self):
+        """Query"""
         # CALCulate:AVERage:MINimum?
         # Returns the minimum value of the statistic function depending on the activated measurement function
         value = self.manager.query("CALC:AVER:MIN?")
@@ -53,6 +58,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def calculate_average_ptpeak(self):
+        """Query"""
         # CALCulate:AVERage:PTPeak?
         # Returns the peak to peak value of the statistic function depending on the activated measurement function
         value = self.manager.query("CALC:AVER:PTP?")
@@ -60,6 +66,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def get_calculate_function(self):
+        """Query"""
         # CALCulate:FUNCtion?
         # Returns the calculation function
         #  NULL: Null function
@@ -73,6 +80,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def set_calculate_function(self, measurement_function='NULL'):
+        """Write"""
         # CALCulate:FUNCtion {NULL | DB | DBM | AVERage | LIMit | POWer}
         # Sets the calculation function, but does not activate the function
         #  NULL: Null function
@@ -85,6 +93,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def get_calculate_null_offset(self, parameter='MIN'):
+        """Query"""
         # CALCulate:NULL:OFFSet? {MINimum | MAXimum}
         # Returns the maximum null value depending on the activated measurement function
         value = self.manager.query("CALC:NULL:OFFS? " + str(parameter))
@@ -92,12 +101,14 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def set_calculate_null_offset(self, parameter='MIN'):
+        """Write"""
         # CALCulate:NULL:OFFSet {<Value> | MINimum | MAXimum}
         # Sets the maximum null value depending on the activated measurement function
         self.manager.write("CALC:NULL:OFF " + str(parameter))
 
     @exception_handler
     def measure_capacitance(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure:CAPacitance? [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for capacitance measurements
         #  <Range> 5nF, 50nF, 500nF, 5µF, 50µF, 500µF
@@ -110,6 +121,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_continuity(self):
+        """Query"""
         # MEASure:CONTinuity?
         # Configures the instrument for continuity measurements
         # Returns a single reading, the range is fixed (4000Ω)
@@ -118,6 +130,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_current_ac(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure:CURRent:AC? [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for AC I measurements
         #  <Range> 20mA, 200mA, 2A, 10A
@@ -130,6 +143,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_current_dc(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure:CURRent:DC? [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for DC I measurements
         #  <Range> 20mA, 200mA, 2A, 10A
@@ -142,6 +156,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_diode(self):
+        """Query"""
         # MEASure:DIODe?
         # Configures the instrument for diode tests
         # Returns a single reading, the range is fixed (5V)
@@ -150,6 +165,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_frequency_current(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure:FREQuency:CURRent [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for frequency measurements with main function AC I
         #  <Range> AC current: 20mA, 200mA (5Hz to 10kHz)
@@ -163,6 +179,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_frequency_voltage(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure:FREQuency[:VOLTAGE]? [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for frequency measurements with main function AC V
         #  <Range> AC voltage: 400mV, 4V, 40V, 400V, 750V (5Hz to 700kHz)
@@ -175,6 +192,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_fresistance(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure:FRESistance? [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for 4-wire resistance measurements
         #  <Range> 400Ω, 4kΩ, 40kΩ, 400kΩ, 4MΩ
@@ -187,6 +205,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_resistance(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure:RESistance? [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for 2-wire resistance measurements
         #  <Range> 400Ω, 4kΩ, 40kΩ, 400kΩ, 4MΩ, 40MΩ, 250MΩ
@@ -199,16 +218,20 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_temperature(self, probe_type='DEF', sensor_type='DEF', unit='C'):
+        """Query"""
         # MEASure:TEMPerature? [{<Probe_Type>| DEF}[,{<Type>| DEF}]
         # Configures the instrument for temperature measurements
         #  <Probe_Type> FRTD|RTD|DEF:RTD
         #  <Type> PT100|PT500|PT1000|DEF:PT100
-        self.set_temperature_unit(unit)
+        ret = self.set_temperature_unit(unit)
+        if not ret[0]:
+            return ret
         value = self.manager.query("MEAS:TEMP? " + str(probe_type) + ',' + str(sensor_type))
         return value
 
     @exception_handler
     def measure_voltage_ac(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure[:VOLTage]:AC? [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for AC V measurements
         #  <Range> 400mV, 4V, 40V, 400V, 750V
@@ -221,6 +244,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def measure_voltage_dc(self, measurement_range='AUTO'):
+        """Query"""
         # MEASure[:VOLTage][:DC]? [{<Range>| AUTO | MIN | MAX | DEF}]
         # Configures the instrument for DC V measurements
         #  <Range> 400mV, 4V, 40V, 400V, 750V
@@ -233,6 +257,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def get_temperature_unit(self):
+        """Query"""
         # UNIT:TEMPerature?
         # Returns the unit of the temperature measurement function
         #  C: °C is activated
@@ -243,6 +268,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def set_temperature_unit(self, temperature_unit='C'):
+        """Write"""
         # UNIT:TEMPerature {C | K | F}
         # Selects the unit of the temperature measurement function
         #  C: °C
