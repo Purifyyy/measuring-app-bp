@@ -6,16 +6,16 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
     def __init__(self, address):
         super(DigitalMultimeterHMC8012, self).__init__(address)
 
-    # def toggle_calculate_function(self, parameter='ON'):
-    #     # CALCulate[:STATe] {OFF | ON}
-    #     # Turns with the CALC FUNC command selected calculation function ON or OFF
-    #     self.manager.write("CALC " + str(parameter))
-    #
-    # def calculate_function_state(self):
-    #     # CALCulate[:STATe]?
-    #     # Returns the state (ON/OFF) of the CALC FUNC command selected calculation function
-    #     value = self.manager.query("CALC?")
-    #     return value
+    def toggle_calculate_function(self, parameter='ON'):
+        # CALCulate[:STATe] {OFF | ON}
+        # Turns with the CALC FUNC command selected calculation function ON or OFF
+        self.manager.write("CALC " + str(parameter))
+
+    def calculate_function_state(self):
+        # CALCulate[:STATe]?
+        # Returns the state (ON/OFF) of the CALC FUNC command selected calculation function
+        value = self.manager.query("CALC?")
+        return value
 
     @exception_handler
     def calculate_average_average(self):

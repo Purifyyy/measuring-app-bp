@@ -2,6 +2,15 @@
 # Connect pri Power supply vytvori instanciu PowerSupplyHMC804x s adresou prisluchajucou vybranemu zariadeniu
 # Connect pri Multimeter vytvori instanciu DigitalMultimeterHMC8012 s adresou prisluchajucou vybranemu zariadeniu
 
+#
+#   Najlepsi sposob docasneho testovania je si v idle importnovat App a InstrumenLoader
+#   nasledne vytvorit -> app = App()
+#   potom vytvorit -> inst = InstrumentLoader(app)
+#   v menu si vybrat bud power supply alebo multimeter, Connect-nut
+#   a potom uz pomocou -> inst.multimeter / inst.power_supply v konzole volat metody
+#
+
+
 import pyvisa
 import tkinter as tk
 from tkinter import ttk
@@ -12,6 +21,8 @@ from multimeter_HMC8012 import DigitalMultimeterHMC8012
 class InstrumentLoader(ttk.Frame):
     def __init__(self, container):
         super().__init__(container)
+        self.power_supply = None
+        self.multimeter = None
         options = {'padx': 5, 'pady': 5}
         self.device_options = self.get_options()
 
@@ -50,7 +61,7 @@ class InstrumentLoader(ttk.Frame):
         print("vytvaram instanciu PowerSupplyHMC804x")
         address = self.get_power_supply_address()
         if address is not None:
-            return PowerSupplyHMC804x(address)
+            self.power_supply = PowerSupplyHMC804x(address)
         print("zla addr")
 
     def get_multimeter_address(self):
@@ -60,7 +71,7 @@ class InstrumentLoader(ttk.Frame):
         print("vytvaram instanciu DigitalMultimeterHMC8012")
         address = self.get_multimeter_address()
         if address is not None:
-            return DigitalMultimeterHMC8012(address)
+            self.multimeter = DigitalMultimeterHMC8012(address)
         print("zla addr")
 
     def get_options(self):
