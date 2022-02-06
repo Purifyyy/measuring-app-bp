@@ -39,11 +39,11 @@ class InstrumentDriver:
 
     @property
     def idn(self):
-        return self._identification
+        return self._idn
 
     @idn.setter
     def idn(self, value):
-        self._identification = value
+        self._idn = value
 
     @exception_handler
     def tst(self):
