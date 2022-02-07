@@ -19,10 +19,14 @@ available_multimeters = {
 class Application(QWidget):
     def __init__(self):
         super().__init__(parent=None)
+        self.power_supply_tab = None
+        self.multimeter_tab = None
         self.HMC8043_common_commands_list = None
         self.HMC8043_common_commands = None
         self.multimeter = None
+        self.is_multimeter_connected = False
         self.power_supply = None
+        self.is_power_supply_connected = False
         self.device_options = self.get_options()
 
         self.powersupply_button = QPushButton()
@@ -84,14 +88,32 @@ class Application(QWidget):
 
     def connect_power_supply(self):
         device_chosen = self.powersupply_menu.currentText()
-        if available_power_supplies.get(device_chosen) is not None:
-            address = self.device_options.get(device_chosen)
-            if address is not None:
-                print("pripajam " + device_chosen + " na adrese " + address)
-                self.power_supply = available_power_supplies[device_chosen](address)
-                self.add_device_tab(device_chosen)
+        if self.is_power_supply_connected is False:
+            # device_chosen = self.powersupply_menu.currentText()
+            if available_power_supplies.get(device_chosen) is not None:
+                address = self.device_options.get(device_chosen)
+                if address is not None:
+                    print("pripajam " + device_chosen + " na adrese " + address)
+                    self.power_supply = available_power_supplies[device_chosen](address)
+                    self.add_device_tab(device_chosen)
+                    self.is_power_supply_connected = True
+                    self.powersupply_button.setText("Disconnect")
+                    self.powersupply_menu.setDisabled(True)
+                    if self.tab_bar.isHidden():
+                        self.tab_bar.show()
+            else:
+                self.handle_error("No such power supply available!")
         else:
-            self.handle_error("No such power supply available!")
+            del self.power_supply
+            self.power_supply = None
+            self.is_power_supply_connected = False
+            self.powersupply_button.setText("Connect")
+            self.tab_bar.removeTab(self.tab_bar.indexOf(self.power_supply_tab))
+            self.power_supply_tab.close()
+            self.powersupply_menu.setDisabled(False)
+            if self.tab_bar.count() == 0:
+                self.tab_bar.setVisible(False)
+
 
     def connect_multimeter(self):
         device_chosen = self.multimeter_menu.currentText()
@@ -112,11 +134,19 @@ class Application(QWidget):
 
     def send_HMC8043_common_command(self):
         inst = self.HMC8043_common_commands.currentText()
-        print(self.HMC8043_common_commands_list[inst]())
-
+        if inst != '':
+            res = self.HMC8043_common_commands_list[inst]()
+            if res[0] is not True:
+                self.handle_error(res[2])
+            else:
+                if res[1] == "Query":
+                    print(res[2])
+                else:
+                    print("write success")
 
     def add_HMC8043_tab(self):
-        device_tab = QWidget()
+        self.power_supply_tab = QWidget()
+        self.power_supply_tab.setAttribute(Qt.WA_DeleteOnClose)
         device_tab_layout = QGridLayout()
         self.HMC8043_common_commands_list = {
             "*TST?": self.power_supply.tst,
@@ -137,8 +167,8 @@ class Application(QWidget):
         if self.tab_bar.isHidden():
             self.tab_bar.show()
 
-        device_tab.setLayout(device_tab_layout)
-        self.tab_bar.addTab(device_tab, "HMC8043")
+        self.power_supply_tab.setLayout(device_tab_layout)
+        self.tab_bar.addTab(self.power_supply_tab, "HMC8043")
 
     def add_HMC8012_tab(self):
         print("making hmc8012 tab")
@@ -146,8 +176,8 @@ class Application(QWidget):
     def get_options(self):
         # Vytvor dictionary device_name:address
         devices = {
-            # "HMC8012": "01234",
-            # "HMC8043": "56789"
+            "HMC8012": "01234",
+            "HMC8043": "56789"
         }
         rm = pyvisa.ResourceManager()
         resources = rm.list_resources()
