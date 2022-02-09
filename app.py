@@ -171,16 +171,9 @@ class Application(QWidget):
         self.power_supply_tab = QWidget()
         self.power_supply_tab.setAttribute(Qt.WA_DeleteOnClose)
         device_tab_layout = QGridLayout()
-        HMC8043_common_commands_list = self.create_common_commands_list(self.power_supply)
-        HMC8043_common_commands = QComboBox()
-        HMC8043_common_commands.addItems(HMC8043_common_commands_list)
-        HMC8043_common_commands.setCurrentIndex(-1)
+        HMC8043_common_commands_list, HMC8043_common_commands, common_commands_button = \
+            self.create_common_commands_list(self.power_supply)
         device_tab_layout.addWidget(HMC8043_common_commands, 0, 0)
-
-        common_commands_button = QPushButton()
-        common_commands_button.setText("Apply")
-        common_commands_button.clicked.connect(lambda: self.send_common_command(HMC8043_common_commands,
-                                                                                HMC8043_common_commands_list))
         device_tab_layout.addWidget(common_commands_button, 0, 1)
 
         self.switch_tab_bar()
@@ -192,16 +185,9 @@ class Application(QWidget):
         self.multimeter_tab = QWidget()
         self.multimeter_tab.setAttribute(Qt.WA_DeleteOnClose)
         device_tab_layout = QGridLayout()
-        self.HMC8012_common_commands_list = self.create_common_commands_list(self.multimeter)
-        self.HMC8012_common_commands = QComboBox()
-        self.HMC8012_common_commands.addItems(self.HMC8012_common_commands_list)
-        self.HMC8012_common_commands.setCurrentIndex(-1)
-        device_tab_layout.addWidget(self.HMC8012_common_commands, 0, 0)
-
-        common_commands_button = QPushButton()
-        common_commands_button.setText("Apply")
-        common_commands_button.clicked.connect(lambda: self.send_common_command(self.HMC8012_common_commands,
-                                                                                self.HMC8012_common_commands_list))
+        HMC8012_common_commands_list, HMC8012_common_commands, common_commands_button = \
+            self.create_common_commands_list(self.multimeter)
+        device_tab_layout.addWidget(HMC8012_common_commands, 0, 0)
         device_tab_layout.addWidget(common_commands_button, 0, 1)
 
         self.switch_tab_bar()
@@ -216,10 +202,16 @@ class Application(QWidget):
             "SYSTem:LOCal": device.local,
             "SYSTem:REMote": device.remote
         }
-        return cmds_list
+        cmds_box = QComboBox()
+        cmds_box.addItems(cmds_list)
+        cmds_box.setCurrentIndex(-1)
+
+        cmds_button = QPushButton()
+        cmds_button.setText("Apply")
+        cmds_button.clicked.connect(lambda: self.send_common_command(cmds_box, cmds_list))
+        return cmds_list, cmds_box, cmds_button
 
     def get_device_options(self):
-        # Vytvor dictionary device_name:address
         devices = {
             "HMC8012": "01234",
             "HMC8043": "56789"
