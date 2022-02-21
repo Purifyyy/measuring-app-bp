@@ -239,7 +239,9 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 400mV range selection
         #  MAX: 750V range selection
         #  DEF: 400mV range selection
-        value = self.manager.query("MEAS:AC? " + str(measurement_range))
+        # value = self.manager.query("MEAS:AC? " + str(measurement_range))
+        print(measurement_range)
+        value = "return from ac v"
         return value
 
     @exception_handler

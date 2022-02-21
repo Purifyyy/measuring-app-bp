@@ -27,7 +27,7 @@ class InstrumentDriver:
         # TCPIP[board]::host address[::LAN device name][::INSTR]
         # TCPIP[board]::host address::port::SOCKET
         # self.manager = rm.open_resource('TCPIP::' + str(address) + '::5025::SOCKET')
-        self.manager = self.rm.open_resource(address)
+        #self.manager = self.rm.open_resource(address)
 
         # Odporucane pyvisa manualom, uvidim ci bude treba
         # self.read_termination = '\n'
@@ -35,10 +35,10 @@ class InstrumentDriver:
 
         # HAMEG,‹device type›,‹serial number›,‹firmwareversion›
         # Example: HAMEG,HMC8012,12345,01.000
-        self.idn = ((self.manager.query("*IDN?")).split(","))[1]
+        #self.idn = ((self.manager.query("*IDN?")).split(","))[1]
 
     def __del__(self):
-        self.manager.close()
+        #self.manager.close()
         self.rm.close()
         print("closing pyvisa resource")
 

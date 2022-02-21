@@ -6,7 +6,6 @@ import qdarkstyle
 from multimeter_HMC8012 import DigitalMultimeterHMC8012
 from powersupply_HMC804x import PowerSupplyHMC804x
 
-
 available_power_supplies = {
     "HMC8043": PowerSupplyHMC804x
 }
@@ -14,6 +13,16 @@ available_power_supplies = {
 available_multimeters = {
     "HMC8012": DigitalMultimeterHMC8012
 }
+
+
+# class SpinBox(QDoubleSpinBox):
+#     stepChanged = pyqtSignal()
+#
+#     def stepBy(self, step):
+#         value = self.value()
+#         super(SpinBox, self).stepBy(step)
+#         if self.value() != value:
+#             self.stepChanged.emit()
 
 
 class Application(QWidget):
@@ -152,6 +161,10 @@ class Application(QWidget):
         except AttributeError:
             self.handle_error("Tab for this device is not available!")
 
+    def send_command(self, func):
+        res = func()
+        self.evaluate_method_call(res)
+
     def send_common_command(self, device_common_commands, device_common_commands_list):
         inst = device_common_commands.currentText()
         if inst != '':
@@ -171,15 +184,49 @@ class Application(QWidget):
         self.power_supply_tab = QWidget()
         self.power_supply_tab.setAttribute(Qt.WA_DeleteOnClose)
         device_tab_layout = QGridLayout()
+
+        device_tab_layout.addWidget(QLabel("Selected channel:"), 0, 0)
+        channel_box = QComboBox()
+        channel_box.addItems(["OUT1", "OUT2", "OUT3"])
+        channel_box.setCurrentIndex(0)
+        device_tab_layout.addWidget(channel_box, 0, 1)
+
         HMC8043_common_commands_list, HMC8043_common_commands, common_commands_button = \
             self.create_common_commands_list(self.power_supply)
-        device_tab_layout.addWidget(HMC8043_common_commands, 0, 0)
-        device_tab_layout.addWidget(common_commands_button, 0, 1)
+        device_tab_layout.addWidget(HMC8043_common_commands, 1, 0)
+        device_tab_layout.addWidget(common_commands_button, 1, 1)
+
+        # voltage_box = QGroupBox("Voltage options")
+        # voltage_layout = QGridLayout()
+        # voltage_layout.addWidget(QLabel("Selected channel voltage:"), 0, 0)
+        # # volage_value_dialog = QInputDialog.getDouble(minValue=0.000E+00, maxValue=3.2050E+01, value=1.000E+00)
+        # voltage_value = SpinBox()
+        # voltage_value.setRange(0, 3.2050E+01)
+        # voltage_value.setDecimals(3)
+        # voltage_value.setValue(0)
+        # voltage_value.editingFinished.connect(self.print_value)
+        # voltage_value.stepChanged.connect(self.handleSpinChanged)
+        # voltage_layout.addWidget(voltage_value)
+        #
+        # voltage_box.setLayout(voltage_layout)
+        # device_tab_layout.addWidget(voltage_box, 2, 0, 1, 2)
+
+        # param = 1
+        # fusestate = QPushButton()
+        # fusestate.setText("fuse state")
+        # fusestate.clicked.connect(lambda: self.send_command(lambda: self.power_supply.set_fuse_state(param, channel_box.currentText())))
+        # device_tab_layout.addWidget(fusestate, 2, 0)
 
         self.switch_tab_bar()
 
         self.power_supply_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.power_supply_tab, "HMC8043")
+
+    # def print_value(self):
+    #     print("setVoltage")
+    #
+    # def handleSpinChanged(self):
+    #     print("stepVoltage")
 
     def add_HMC8012_tab(self):
         self.multimeter_tab = QWidget()
@@ -190,10 +237,44 @@ class Application(QWidget):
         device_tab_layout.addWidget(HMC8012_common_commands, 0, 0)
         device_tab_layout.addWidget(common_commands_button, 0, 1)
 
+        function_box = QGroupBox("Measurement and Mathematic functions")
+        function_box_layout = QGridLayout()
+        function_box_layout.addWidget(QLabel("Selected measurement function:"), 0, 0)
+        measurement_function = QComboBox()
+        measurement_function.addItem("DC V", self.multimeter.measure_voltage_dc)
+        measurement_function.addItem("AC V", self.multimeter.measure_voltage_ac)
+        measurement_function.addItem("DC I", self.multimeter.measure_current_dc)
+        measurement_function.addItem("AC I", self.multimeter.measure_current_ac)
+        measurement_function.addItem("Ω", self.multimeter.measure_continuity)
+        measurement_function.addItem("CAP", self.multimeter.measure_capacitance)
+        # measurement_function.addItem("SENSOR", )
+
+        measurement_function.setCurrentIndex(-1)
+        measurement_function.currentIndexChanged.connect(self.configure_multimeter_measurements)
+        function_box_layout.addWidget(measurement_function, 0, 1)
+        function_box.setLayout(function_box_layout)
+        device_tab_layout.addWidget(function_box, 2, 0, 1, 2)
+
         self.switch_tab_bar()
 
         self.multimeter_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.multimeter_tab, "HMC8012")
+
+    def configure_multimeter_measurements(self, index):
+        if not (index < 0):
+            func = self.sender().itemData(index)
+            user_input, was_success = self.get_user_input("Measurement range", "Enter desired range (AUTO if empty)")
+            if was_success:
+                if user_input.isspace() or not user_input:
+                    self.send_command(func)
+                else:
+                    self.send_command(lambda: func(user_input))
+            else:
+                self.sender().setCurrentIndex(-1)
+
+    def get_user_input(self, title, label):
+        text, ok = QInputDialog.getText(self, title, label)
+        return text, ok
 
     def create_common_commands_list(self, device):
         cmds_list = {
@@ -224,4 +305,3 @@ class Application(QWidget):
             inst.close()
         rm.close()
         return devices
-
