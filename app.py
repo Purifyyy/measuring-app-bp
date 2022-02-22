@@ -24,6 +24,19 @@ available_multimeters = {
 #         if self.value() != value:
 #             self.stepChanged.emit()
 
+# Custom QComboBox, that comes with previously selected index, on currentIndexChanged signal
+class ComboBoxWithLast(QComboBox):
+    selectedItemChanged = pyqtSignal(int, int)
+
+    def __init__(self, parent=None):
+        super(ComboBoxWithLast, self).__init__(parent)
+        self.lastSelected = ""
+        self.currentIndexChanged.connect(self.onChange)
+
+    def onChange(self, text):
+        self.selectedItemChanged.emit(self.lastSelected, text)
+        self.lastSelected = text
+
 
 class Application(QWidget):
     def __init__(self):
@@ -240,7 +253,7 @@ class Application(QWidget):
         function_box = QGroupBox("Measurement and Mathematic functions")
         function_box_layout = QGridLayout()
         function_box_layout.addWidget(QLabel("Selected measurement function:"), 0, 0)
-        measurement_function = QComboBox()
+        measurement_function = ComboBoxWithLast()
         measurement_function.addItem("DC V", self.multimeter.measure_voltage_dc)
         measurement_function.addItem("AC V", self.multimeter.measure_voltage_ac)
         measurement_function.addItem("DC I", self.multimeter.measure_current_dc)
@@ -250,7 +263,7 @@ class Application(QWidget):
         # measurement_function.addItem("SENSOR", )
 
         measurement_function.setCurrentIndex(-1)
-        measurement_function.currentIndexChanged.connect(self.configure_multimeter_measurements)
+        measurement_function.selectedItemChanged.connect(self.configure_multimeter_measurements)
         function_box_layout.addWidget(measurement_function, 0, 1)
         function_box.setLayout(function_box_layout)
         device_tab_layout.addWidget(function_box, 2, 0, 1, 2)
@@ -260,9 +273,10 @@ class Application(QWidget):
         self.multimeter_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.multimeter_tab, "HMC8012")
 
-    def configure_multimeter_measurements(self, index):
-        if not (index < 0):
-            func = self.sender().itemData(index)
+    def configure_multimeter_measurements(self, last, new):
+        sender = self.sender()
+        if not (new < 0):
+            func = sender.itemData(new)
             user_input, was_success = self.get_user_input("Measurement range", "Enter desired range (AUTO if empty)")
             if was_success:
                 if user_input.isspace() or not user_input:
@@ -270,7 +284,9 @@ class Application(QWidget):
                 else:
                     self.send_command(lambda: func(user_input))
             else:
-                self.sender().setCurrentIndex(-1)
+                sender.blockSignals(True)
+                sender.setCurrentIndex(last)
+                sender.blockSignals(False)
 
     def get_user_input(self, title, label):
         text, ok = QInputDialog.getText(self, title, label)
