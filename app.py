@@ -38,6 +38,13 @@ class ComboBoxWithLast(QComboBox):
         self.lastSelected = text
 
 
+class ButtonWithSwitch(QPushButton):
+
+    def __init__(self, parent=None):
+        super(ButtonWithSwitch, self).__init__(parent)
+        self.isActivated = False
+
+
 class Application(QWidget):
     def __init__(self):
         super().__init__(parent=None)
@@ -261,10 +268,29 @@ class Application(QWidget):
         measurement_function.addItem("Ω", self.multimeter.measure_continuity)
         measurement_function.addItem("CAP", self.multimeter.measure_capacitance)
         # measurement_function.addItem("SENSOR", )
-
         measurement_function.setCurrentIndex(-1)
         measurement_function.selectedItemChanged.connect(self.configure_multimeter_measurements)
-        function_box_layout.addWidget(measurement_function, 0, 1)
+        function_box_layout.addWidget(measurement_function, 0, 1, 1, 2)
+
+        function_box_layout.addWidget(QLabel("Selected mathematic function:"), 1, 0)
+        mathematic_function = QComboBox()
+        mathematic_function.addItems([
+            "AVERage",
+            "LIMit",
+            "NULL",
+            "DB",
+            "DBM",
+            "POWer",
+        ])
+        mathematic_function.setCurrentIndex(-1)
+        mathematic_function.currentTextChanged.connect(self.set_mathematic_function)
+        function_box_layout.addWidget(mathematic_function, 1, 1)
+
+        activate_mathematic_function = ButtonWithSwitch()
+        activate_mathematic_function.setText("Activate")
+        activate_mathematic_function.clicked.connect(self.activate_calc_function)
+        function_box_layout.addWidget(activate_mathematic_function, 1, 2)
+
         function_box.setLayout(function_box_layout)
         device_tab_layout.addWidget(function_box, 2, 0, 1, 2)
 
@@ -272,6 +298,20 @@ class Application(QWidget):
 
         self.multimeter_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.multimeter_tab, "HMC8012")
+
+    def activate_calc_function(self):
+        sender = self.sender()
+        if sender.isActivated:
+            self.send_command(lambda: self.multimeter.toggle_calculate_function("OFF"))
+            sender.setText("Activate")
+            sender.isActivated = False
+        else:
+            self.send_command(self.multimeter.toggle_calculate_function)
+            sender.setText("Disable")
+            sender.isActivated = True
+
+    def set_mathematic_function(self, value):
+        self.send_command(lambda: self.multimeter.set_calculate_function(value))
 
     def configure_multimeter_measurements(self, last, new):
         sender = self.sender()
