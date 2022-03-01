@@ -182,8 +182,9 @@ class Application(QWidget):
             self.handle_error("Tab for this device is not available!")
 
     def send_command(self, func):
-        res = func()
-        self.evaluate_method_call(res)
+        if func is not None:
+            res = func()
+            self.evaluate_method_call(res)
 
     def send_common_command(self, device_common_commands, device_common_commands_list):
         inst = device_common_commands.currentText()
@@ -252,12 +253,55 @@ class Application(QWidget):
         self.multimeter_tab = QWidget()
         self.multimeter_tab.setAttribute(Qt.WA_DeleteOnClose)
         device_tab_layout = QGridLayout()
+
+        common_command_box = QGroupBox("Common commands")
+        common_command_box_layout = QGridLayout()
         HMC8012_common_commands_list, HMC8012_common_commands, common_commands_button = \
             self.create_common_commands_list(self.multimeter)
-        device_tab_layout.addWidget(HMC8012_common_commands, 0, 0)
-        device_tab_layout.addWidget(common_commands_button, 0, 1)
+        common_command_box_layout.addWidget(HMC8012_common_commands, 0, 0)
+        common_command_box_layout.addWidget(common_commands_button, 0, 1)
+        common_command_box.setLayout(common_command_box_layout)
+        device_tab_layout.addWidget(common_command_box, 0, 0, 1, 1)
 
-        function_box = QGroupBox("Measurement and Mathematic functions")
+        temperature_box = QGroupBox("Temperature settings")
+        temperature_box_layout = QGridLayout()
+        temperature_box_layout.addWidget(QLabel("Unit:"), 0, 0)
+        temperature_unit = QComboBox()
+        temp_unit_options = ["Celsius", "Kelvin", "Fahrenheit"]
+        temperature_unit.addItems(temp_unit_options)
+        temperature_unit.setItemData(0, "C")
+        temperature_unit.setItemData(1, "K")
+        temperature_unit.setItemData(2, "F")
+        temperature_box_layout.addWidget(temperature_unit, 0, 1)
+        temperature_unit.setCurrentIndex(-1)
+        temperature_box_layout.addWidget(QLabel("Probe:"), 1, 0)
+        probe_type = QComboBox()
+        probe_type.addItems({
+            "RTD",
+            "FRTD"
+        })
+        temperature_box_layout.addWidget(probe_type, 1, 1)
+        probe_type.setCurrentIndex(-1)
+        temperature_box_layout.addWidget(QLabel("Sensor:"), 2, 0)
+        sensor_type = QComboBox()
+        sensor_type.addItems({
+            "PT100",
+            "PT500",
+            "PT1000"
+        })
+        sensor_type.setCurrentIndex(-1)
+        temperature_box_layout.addWidget(sensor_type, 2, 1)
+        setup_temperature_button = QPushButton()
+        setup_temperature_button.setText("Configure")
+        setup_temperature_button.clicked.connect(lambda: self.configure_temperature(
+            temperature_unit.itemData(temperature_unit.currentIndex()),
+            probe_type.currentText(),
+            sensor_type.currentText()))
+        temperature_box_layout.addWidget(setup_temperature_button, 0, 2, 3, 1)
+        temperature_box.setLayout(temperature_box_layout)
+        device_tab_layout.addWidget(temperature_box, 0, 1, 1, 1)
+
+        function_box = QGroupBox("Measurement options")
         function_box_layout = QGridLayout()
         function_box_layout.addWidget(QLabel("Selected measurement function:"), 0, 0)
         measurement_function = ComboBoxWithLast()
@@ -272,7 +316,7 @@ class Application(QWidget):
         measurement_function.selectedItemChanged.connect(self.configure_multimeter_measurements)
         function_box_layout.addWidget(measurement_function, 0, 1, 1, 2)
 
-        function_box_layout.addWidget(QLabel("Selected mathematic function:"), 1, 0)
+        function_box_layout.addWidget(QLabel("Mathematic function:"), 1, 0)
         mathematic_function = QComboBox()
         mathematic_function.addItems([
             "AVERage",
@@ -294,6 +338,22 @@ class Application(QWidget):
         function_box.setLayout(function_box_layout)
         device_tab_layout.addWidget(function_box, 2, 0, 1, 2)
 
+        function_box_layout.addWidget(QLabel("Statistic function options:"), 2, 0)
+        statistic_function = QComboBox()
+        statistic_function.addItem("Mean", self.multimeter.calculate_average_average)
+        statistic_function.addItem("Maximum", self.multimeter.calculate_average_maximum)
+        statistic_function.addItem("Minimum", self.multimeter.calculate_average_minimum)
+        statistic_function.addItem("Peak to peak", self.multimeter.calculate_average_ptpeak)
+        statistic_function.addItem("Measurement counts", self.multimeter.calculate_average_count)
+        statistic_function.addItem("Reset", self.multimeter.calculate_average_clear)
+        statistic_function.setCurrentIndex(-1)
+        function_box_layout.addWidget(statistic_function, 2, 1)
+
+        activate_statistic_function = QPushButton()
+        activate_statistic_function.setText("Get")
+        activate_statistic_function.clicked.connect(lambda: self.send_command(statistic_function.currentData()))
+        function_box_layout.addWidget(activate_statistic_function, 2, 2)
+
         self.switch_tab_bar()
 
         self.multimeter_tab.setLayout(device_tab_layout)
@@ -309,6 +369,17 @@ class Application(QWidget):
             self.send_command(self.multimeter.toggle_calculate_function)
             sender.setText("Disable")
             sender.isActivated = True
+
+    def configure_temperature(self, unit, probe, sensor):
+        # measure_temperature(self, probe_type='DEF', sensor_type='DEF', unit='C')
+        kwargs = {}
+        if unit is not None:
+            kwargs.update({"unit": unit})
+        if probe != '':
+            kwargs.update({"probe_type": probe})
+        if sensor != '':
+            kwargs.update({"sensor_type": sensor})
+        self.send_command(lambda: self.multimeter.measure_temperature(**kwargs))
 
     def set_mathematic_function(self, value):
         self.send_command(lambda: self.multimeter.set_calculate_function(value))

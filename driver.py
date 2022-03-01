@@ -2,9 +2,9 @@ import pyvisa
 
 
 def exception_handler(func):
-    def inner(*args):
+    def inner(*args, **kwargs):
         try:
-            result = func(*args)
+            result = func(*args, **kwargs)
             if func.__doc__ == "Query":
                 if not result[0]:
                     return False, func.__doc__, result[2]
