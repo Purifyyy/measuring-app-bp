@@ -311,13 +311,18 @@ class Application(QWidget):
         measurement_function.addItem("AC I", self.multimeter.measure_current_ac)
         measurement_function.addItem("Ω", self.multimeter.measure_continuity)
         measurement_function.addItem("CAP", self.multimeter.measure_capacitance)
-        # measurement_function.addItem("SENSOR", )
+        # measurement_function.addItem("SENSOR", )                                                      <TODO>
+        measurement_function.addItem("Frequency (AC I)", self.multimeter.measure_frequency_current)
+        measurement_function.addItem("Frequency (AC V)", self.multimeter.measure_frequency_voltage)
+        measurement_function.addItem("Resistance (2-wire)", self.multimeter.measure_resistance)
+        measurement_function.addItem("Resistance (4-wire)", self.multimeter.measure_fresistance)
+        measurement_function.addItem("Diode tests", self.multimeter.measure_diode)
         measurement_function.setCurrentIndex(-1)
         measurement_function.selectedItemChanged.connect(self.configure_multimeter_measurements)
         function_box_layout.addWidget(measurement_function, 0, 1, 1, 2)
 
         function_box_layout.addWidget(QLabel("Mathematic function:"), 1, 0)
-        mathematic_function = QComboBox()
+        mathematic_function = ComboBoxWithLast()
         mathematic_function.addItems([
             "AVERage",
             "LIMit",
@@ -327,7 +332,7 @@ class Application(QWidget):
             "POWer",
         ])
         mathematic_function.setCurrentIndex(-1)
-        mathematic_function.currentTextChanged.connect(self.set_mathematic_function)
+        mathematic_function.selectedItemChanged.connect(self.set_mathematic_function)
         function_box_layout.addWidget(mathematic_function, 1, 1)
 
         activate_mathematic_function = ButtonWithSwitch()
@@ -371,7 +376,6 @@ class Application(QWidget):
             sender.isActivated = True
 
     def configure_temperature(self, unit, probe, sensor):
-        # measure_temperature(self, probe_type='DEF', sensor_type='DEF', unit='C')
         kwargs = {}
         if unit is not None:
             kwargs.update({"unit": unit})
@@ -381,23 +385,40 @@ class Application(QWidget):
             kwargs.update({"sensor_type": sensor})
         self.send_command(lambda: self.multimeter.measure_temperature(**kwargs))
 
-    def set_mathematic_function(self, value):
-        self.send_command(lambda: self.multimeter.set_calculate_function(value))
+    def set_mathematic_function(self, last, new):
+        sender = self.sender()
+        if not (new < 0):
+            if sender.currentText() == 'NULL':
+                user_input, was_success = self.get_user_input("Maximum null", "Enter maximum NULL value (MIN if empty)")
+                if was_success:
+                    if user_input.isspace() or not user_input:
+                        self.send_command(self.multimeter.set_calculate_null_offset)
+                    else:
+                        self.send_command(lambda: self.multimeter.set_calculate_null_offset(user_input))
+                else:
+                    sender.blockSignals(True)
+                    sender.setCurrentIndex(last)
+                    sender.blockSignals(False)
+            self.send_command(lambda: self.multimeter.set_calculate_function(sender.currentText()))
 
     def configure_multimeter_measurements(self, last, new):
         sender = self.sender()
         if not (new < 0):
-            func = sender.itemData(new)
-            user_input, was_success = self.get_user_input("Measurement range", "Enter desired range (AUTO if empty)")
-            if was_success:
-                if user_input.isspace() or not user_input:
-                    self.send_command(func)
-                else:
-                    self.send_command(lambda: func(user_input))
+            if sender.currentText() == 'Diode tests':
+                func = sender.itemData(new)
+                self.send_command(func)
             else:
-                sender.blockSignals(True)
-                sender.setCurrentIndex(last)
-                sender.blockSignals(False)
+                func = sender.itemData(new)
+                user_input, was_success = self.get_user_input("Measurement range", "Enter desired range (AUTO if empty)")
+                if was_success:
+                    if user_input.isspace() or not user_input:
+                        self.send_command(func)
+                    else:
+                        self.send_command(lambda: func(user_input))
+                else:
+                    sender.blockSignals(True)
+                    sender.setCurrentIndex(last)
+                    sender.blockSignals(False)
 
     def get_user_input(self, title, label):
         text, ok = QInputDialog.getText(self, title, label)

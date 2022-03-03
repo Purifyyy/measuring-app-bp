@@ -6,11 +6,13 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
     def __init__(self, address):
         super(DigitalMultimeterHMC8012, self).__init__(address)
 
+    @exception_handler
     def toggle_calculate_function(self, parameter='ON'):
         # CALCulate[:STATe] {OFF | ON}
         # Turns with the CALC FUNC command selected calculation function ON or OFF
         self.manager.write("CALC " + str(parameter))
 
+    @exception_handler
     def calculate_function_state(self):
         # CALCulate[:STATe]?
         # Returns the state (ON/OFF) of the CALC FUNC command selected calculation function
@@ -239,9 +241,7 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
         #  MIN: 400mV range selection
         #  MAX: 750V range selection
         #  DEF: 400mV range selection
-        # value = self.manager.query("MEAS:AC? " + str(measurement_range))
-        print(measurement_range)
-        value = "return from ac v"
+        value = self.manager.query("MEAS:AC? " + str(measurement_range))
         return value
 
     @exception_handler
