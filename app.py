@@ -2,6 +2,7 @@ import pyvisa
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import qdarkstyle
+from QSwitchControl import SwitchControl
 
 from multimeter_HMC8012 import DigitalMultimeterHMC8012
 from powersupply_HMC804x import PowerSupplyHMC804x
@@ -65,7 +66,11 @@ class Application(QWidget):
         self.tab_bar = self.make_tab_bar()
 
         self.setWindowTitle("Measure it")
-        self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QLabel, QPushButton, QComboBox, QTabWidget"
+                                                                "{font-size: 11pt;"
+                                                                "font-weight: 500;}" +
+                           "QGroupBox{font-size: 10pt;}")
+
         layout = QGridLayout()
 
         layout.addWidget(self.connect_section, 0, 0)
@@ -75,7 +80,8 @@ class Application(QWidget):
 
     def handle_error(self, error):
         errmsg = QMessageBox()
-        errmsg.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        errmsg.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QMessageBox {font-size: 11pt;"
+                                                                  "font-weight: 500;}")
         errmsg.setIcon(QMessageBox.Critical)
         errmsg.setText(error)
         errmsg.setWindowTitle("Error")
@@ -226,6 +232,50 @@ class Application(QWidget):
         channel_settings_box.setLayout(channel_settings_box_layout)
         device_tab_layout.addWidget(channel_settings_box, 1, 0, 1, 2)
 
+        fuse_options_box = QGroupBox("Fuse options")
+        fuse_options_box_layout = QGridLayout()
+        fuse_state_box = QGroupBox("Fuse states")
+        fuse_state_box_layout = QGridLayout()
+        fuse_state_box_layout.addWidget(QLabel("Fuse 1", ), 0, 0)
+        fuse_state_box_layout.addWidget(QLabel("State:", ), 0, 1)
+        first_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                          animation_duration=100, checked=False, change_cursor=True)
+        first_fuse_switch.stateChanged.connect(
+            lambda: self.change_fuse_state(first_fuse_switch.checkState(), "OUT1"))
+        fuse_state_box_layout.addWidget(first_fuse_switch, 0, 2)
+        first_fuse_delay_button = QPushButton()
+        first_fuse_delay_button.setText("Delay")
+        first_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(1))
+        fuse_state_box_layout.addWidget(first_fuse_delay_button, 0, 3)
+        fuse_state_box_layout.addWidget(QLabel("Fuse 2", ), 1, 0)
+        fuse_state_box_layout.addWidget(QLabel("State:", ), 1, 1)
+        second_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                           animation_duration=100, checked=False, change_cursor=True)
+        second_fuse_switch.stateChanged.connect(
+            lambda: self.change_fuse_state(second_fuse_switch.checkState(), "OUT2"))
+        fuse_state_box_layout.addWidget(second_fuse_switch, 1, 2)
+        second_fuse_delay_button = QPushButton()
+        second_fuse_delay_button.setText("Delay")
+        second_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(2))
+        fuse_state_box_layout.addWidget(second_fuse_delay_button, 1, 3)
+        fuse_state_box_layout.addWidget(QLabel("Fuse 3", ), 2, 0)
+        fuse_state_box_layout.addWidget(QLabel("State:", ), 2, 1)
+        third_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                          animation_duration=100, checked=False, change_cursor=True)
+        third_fuse_switch.stateChanged.connect(
+            lambda: self.change_fuse_state(third_fuse_switch.checkState(), "OUT3"))
+        fuse_state_box_layout.addWidget(third_fuse_switch, 2, 2)
+        third_fuse_delay_button = QPushButton()
+        third_fuse_delay_button.setText("Delay")
+        third_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(3))
+        fuse_state_box_layout.addWidget(third_fuse_delay_button, 2, 3)
+        # fuse_state_box_layout.setAlignment(Qt.AlignHCenter)
+        fuse_state_box.setLayout(fuse_state_box_layout)
+
+        fuse_options_box_layout.addWidget(fuse_state_box, 0, 0)
+        fuse_options_box.setLayout(fuse_options_box_layout)
+        device_tab_layout.addWidget(fuse_options_box, 2, 0, 1, 2)
+
         measurement_options_box = QGroupBox("Measurement options")
         measurement_options_box_layout = QGridLayout()
         measurement_options_box_layout.addWidget(QLabel("Value to measure:"), 0, 0)
@@ -237,10 +287,11 @@ class Application(QWidget):
         measurement_options_box_layout.addWidget(measurement_box, 0, 1)
         measure_selected_value = ButtonWithSwitch()
         measure_selected_value.setText("Query")
-        measure_selected_value.clicked.connect(lambda: self.send_command(lambda: measurement_box.currentData()(channel_box.currentText())))
+        measure_selected_value.clicked.connect(
+            lambda: self.send_command(lambda: measurement_box.currentData()(channel_box.currentText())))
         measurement_options_box_layout.addWidget(measure_selected_value, 0, 2)
         measurement_options_box.setLayout(measurement_options_box_layout)
-        device_tab_layout.addWidget(measurement_options_box, 2, 0, 1, 2)
+        device_tab_layout.addWidget(measurement_options_box, 3, 0, 1, 2)
 
         # voltage_box = QGroupBox("Voltage options")
         # voltage_layout = QGridLayout()
@@ -273,6 +324,22 @@ class Application(QWidget):
     #
     # def handleSpinChanged(self):
     #     print("stepVoltage")
+
+    def change_fuse_state(self, state, channel):
+        if state == Qt.Checked:
+            self.send_command(lambda: self.power_supply.set_fuse_state(1, channel))
+        elif state == Qt.Unchecked:
+            self.send_command(lambda: self.power_supply.set_fuse_state(0, channel))
+
+    def set_fuse_delay(self, fuse_number):
+        fuse_number = str(fuse_number)
+        user_input, was_success = self.get_user_input("Fuse delay", "Set delay of fuse " + fuse_number + " (MIN if "
+                                                                                                         "empty)")
+        if was_success:
+            if user_input.isspace() or not user_input:
+                self.send_command(lambda: self.power_supply.set_fuse_delay("MIN", "OUT" + fuse_number))
+            else:
+                self.send_command(lambda: self.power_supply.set_fuse_delay(user_input, "OUT" + fuse_number))
 
     def add_HMC8012_tab(self):
         self.multimeter_tab = QWidget()
@@ -434,7 +501,8 @@ class Application(QWidget):
                 self.send_command(func)
             else:
                 func = sender.itemData(new)
-                user_input, was_success = self.get_user_input("Measurement range", "Enter desired range (AUTO if empty)")
+                user_input, was_success = self.get_user_input("Measurement range",
+                                                              "Enter desired range (AUTO if empty)")
                 if was_success:
                     if user_input.isspace() or not user_input:
                         self.send_command(func)
