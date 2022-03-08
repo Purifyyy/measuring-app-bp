@@ -230,6 +230,7 @@ class Application(QWidget):
         channel_box.currentIndexChanged.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         channel_box.setCurrentIndex(2)
         channel_settings_box_layout.addWidget(channel_box, 0, 1)
+
         channel_settings_box.setLayout(channel_settings_box_layout)
         device_tab_layout.addWidget(channel_settings_box, 1, 0, 1, 2)
 
@@ -244,15 +245,16 @@ class Application(QWidget):
         first_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                           animation_duration=100, checked=False, change_cursor=True)
         first_fuse_switch.stateChanged.connect(
-            lambda: self.change_fuse_state(first_fuse_switch.checkState(), "OUT1"))
+            lambda: self.change_fuse_state(first_fuse_switch.checkState(), "OUT1", channel_box.currentText()))
         fuse_state_box_layout.addWidget(first_fuse_switch, 0, 2)
         first_fuse_delay_button = QPushButton()
         first_fuse_delay_button.setText("Delay")
-        first_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(1))
+        first_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(1, channel_box.currentText()))
         fuse_state_box_layout.addWidget(first_fuse_delay_button, 0, 3)
         first_fuse_trip_button = QPushButton()
         first_fuse_trip_button.setText("Trip")
         first_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT1")))
+        first_fuse_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         fuse_state_box_layout.addWidget(first_fuse_trip_button, 0, 4)
         fuse_state_box_layout.addWidget(QLabel("Fuse 2", ), 1, 0)
         second_fuse_state_label = QLabel("State:")
@@ -261,15 +263,16 @@ class Application(QWidget):
         second_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                            animation_duration=100, checked=False, change_cursor=True)
         second_fuse_switch.stateChanged.connect(
-            lambda: self.change_fuse_state(second_fuse_switch.checkState(), "OUT2"))
+            lambda: self.change_fuse_state(second_fuse_switch.checkState(), "OUT2", channel_box.currentText()))
         fuse_state_box_layout.addWidget(second_fuse_switch, 1, 2)
         second_fuse_delay_button = QPushButton()
         second_fuse_delay_button.setText("Delay")
-        second_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(2))
+        second_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(2, channel_box.currentText()))
         fuse_state_box_layout.addWidget(second_fuse_delay_button, 1, 3)
         second_fuse_trip_button = QPushButton()
         second_fuse_trip_button.setText("Trip")
         second_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT2")))
+        second_fuse_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         fuse_state_box_layout.addWidget(second_fuse_trip_button, 1, 4)
         fuse_state_box_layout.addWidget(QLabel("Fuse 3", ), 2, 0)
         third_fuse_state_label = QLabel("State:")
@@ -278,15 +281,16 @@ class Application(QWidget):
         third_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                           animation_duration=100, checked=False, change_cursor=True)
         third_fuse_switch.stateChanged.connect(
-            lambda: self.change_fuse_state(third_fuse_switch.checkState(), "OUT3"))
+            lambda: self.change_fuse_state(third_fuse_switch.checkState(), "OUT3", channel_box.currentText()))
         fuse_state_box_layout.addWidget(third_fuse_switch, 2, 2)
         third_fuse_delay_button = QPushButton()
         third_fuse_delay_button.setText("Delay")
-        third_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(3))
+        third_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(3, channel_box.currentText()))
         fuse_state_box_layout.addWidget(third_fuse_delay_button, 2, 3)
         third_fuse_trip_button = QPushButton()
         third_fuse_trip_button.setText("Trip")
         third_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT3")))
+        third_fuse_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         fuse_state_box_layout.addWidget(third_fuse_trip_button, 2, 4)
         # fuse_state_box_layout.setAlignment(Qt.AlignHCenter)
         fuse_state_box.setLayout(fuse_state_box_layout)
@@ -297,17 +301,17 @@ class Application(QWidget):
         fuse_linking_box_layout.addWidget(QLabel("Fuse CH1 with fuse CH2"), 0, 0)
         first_fuse_link_button = ButtonWithSwitch()
         first_fuse_link_button.setText("Link")
-        first_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(2, "OUT1"))
+        first_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(2, "OUT1", channel_box.currentText()))
         fuse_linking_box_layout.addWidget(first_fuse_link_button, 0, 1)
         fuse_linking_box_layout.addWidget(QLabel("Fuse CH2 with fuse CH3"), 1, 0)
         second_fuse_link_button = ButtonWithSwitch()
         second_fuse_link_button.setText("Link")
-        second_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(3, "OUT2"))
+        second_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(3, "OUT2", channel_box.currentText()))
         fuse_linking_box_layout.addWidget(second_fuse_link_button, 1, 1)
         fuse_linking_box_layout.addWidget(QLabel("Fuse CH3 with fuse CH1"), 2, 0)
         third_fuse_link_button = ButtonWithSwitch()
         third_fuse_link_button.setText("Link")
-        third_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(1, "OUT3"))
+        third_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(1, "OUT3", channel_box.currentText()))
         fuse_linking_box_layout.addWidget(third_fuse_link_button, 2, 1)
         fuse_linking_box.setLayout(fuse_linking_box_layout)
         fuse_options_box_layout.addWidget(fuse_linking_box, 1, 0)
@@ -364,7 +368,7 @@ class Application(QWidget):
     # def handleSpinChanged(self):
     #     print("stepVoltage")
 
-    def link_unlink_fuse(self, fuse_to_link, fuse_to_be_linked):
+    def link_unlink_fuse(self, fuse_to_link, fuse_to_be_linked, selected_channel):
         sender = self.sender()
         if sender.isActivated:
             self.send_command(lambda: self.power_supply.set_output_channel(fuse_to_be_linked))
@@ -375,14 +379,16 @@ class Application(QWidget):
             self.send_command(lambda: self.power_supply.set_fuse_link(fuse_to_link, fuse_to_be_linked))
             sender.setText("Unlink")
             sender.isActivated = True
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
 
-    def change_fuse_state(self, state, channel):
+    def change_fuse_state(self, state, channel, selected_channel):
         if state == Qt.Checked:
             self.send_command(lambda: self.power_supply.set_fuse_state(1, channel))
         elif state == Qt.Unchecked:
             self.send_command(lambda: self.power_supply.set_fuse_state(0, channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
 
-    def set_fuse_delay(self, fuse_number):
+    def set_fuse_delay(self, fuse_number, selected_channel):
         fuse_number = str(fuse_number)
         user_input, was_success = self.get_user_input("Fuse delay", "Set delay of fuse " + fuse_number + " (MIN if "
                                                                                                          "empty)")
@@ -391,6 +397,7 @@ class Application(QWidget):
                 self.send_command(lambda: self.power_supply.set_fuse_delay("MIN", "OUT" + fuse_number))
             else:
                 self.send_command(lambda: self.power_supply.set_fuse_delay(user_input, "OUT" + fuse_number))
+            self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
 
     def add_HMC8012_tab(self):
         self.multimeter_tab = QWidget()
