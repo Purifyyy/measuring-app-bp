@@ -68,7 +68,8 @@ class Application(QWidget):
         self.setWindowTitle("Measure it")
         self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QLabel, QPushButton, QComboBox, QTabWidget"
                                                                 "{font-size: 11pt;"
-                                                                "font-weight: 500;}" +
+                                                                "font-weight: 500;"
+                                                                "font-family: Arial;}" +
                            "QGroupBox{font-size: 10pt;}")
 
         layout = QGridLayout()
@@ -234,10 +235,12 @@ class Application(QWidget):
 
         fuse_options_box = QGroupBox("Fuse options")
         fuse_options_box_layout = QGridLayout()
-        fuse_state_box = QGroupBox("Fuse states")
+        fuse_state_box = QGroupBox()
         fuse_state_box_layout = QGridLayout()
         fuse_state_box_layout.addWidget(QLabel("Fuse 1", ), 0, 0)
-        fuse_state_box_layout.addWidget(QLabel("State:", ), 0, 1)
+        first_fuse_state_label = QLabel("State:")
+        first_fuse_state_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        fuse_state_box_layout.addWidget(first_fuse_state_label, 0, 1)
         first_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                           animation_duration=100, checked=False, change_cursor=True)
         first_fuse_switch.stateChanged.connect(
@@ -247,8 +250,14 @@ class Application(QWidget):
         first_fuse_delay_button.setText("Delay")
         first_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(1))
         fuse_state_box_layout.addWidget(first_fuse_delay_button, 0, 3)
+        first_fuse_trip_button = QPushButton()
+        first_fuse_trip_button.setText("Trip")
+        first_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT1")))
+        fuse_state_box_layout.addWidget(first_fuse_trip_button, 0, 4)
         fuse_state_box_layout.addWidget(QLabel("Fuse 2", ), 1, 0)
-        fuse_state_box_layout.addWidget(QLabel("State:", ), 1, 1)
+        second_fuse_state_label = QLabel("State:")
+        second_fuse_state_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        fuse_state_box_layout.addWidget(second_fuse_state_label, 1, 1)
         second_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                            animation_duration=100, checked=False, change_cursor=True)
         second_fuse_switch.stateChanged.connect(
@@ -258,8 +267,14 @@ class Application(QWidget):
         second_fuse_delay_button.setText("Delay")
         second_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(2))
         fuse_state_box_layout.addWidget(second_fuse_delay_button, 1, 3)
+        second_fuse_trip_button = QPushButton()
+        second_fuse_trip_button.setText("Trip")
+        second_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT2")))
+        fuse_state_box_layout.addWidget(second_fuse_trip_button, 1, 4)
         fuse_state_box_layout.addWidget(QLabel("Fuse 3", ), 2, 0)
-        fuse_state_box_layout.addWidget(QLabel("State:", ), 2, 1)
+        third_fuse_state_label = QLabel("State:")
+        third_fuse_state_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        fuse_state_box_layout.addWidget(third_fuse_state_label, 2, 1)
         third_fuse_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                           animation_duration=100, checked=False, change_cursor=True)
         third_fuse_switch.stateChanged.connect(
@@ -269,10 +284,34 @@ class Application(QWidget):
         third_fuse_delay_button.setText("Delay")
         third_fuse_delay_button.clicked.connect(lambda: self.set_fuse_delay(3))
         fuse_state_box_layout.addWidget(third_fuse_delay_button, 2, 3)
+        third_fuse_trip_button = QPushButton()
+        third_fuse_trip_button.setText("Trip")
+        third_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT3")))
+        fuse_state_box_layout.addWidget(third_fuse_trip_button, 2, 4)
         # fuse_state_box_layout.setAlignment(Qt.AlignHCenter)
         fuse_state_box.setLayout(fuse_state_box_layout)
-
         fuse_options_box_layout.addWidget(fuse_state_box, 0, 0)
+
+        fuse_linking_box = QGroupBox("Link && unlink fuses")
+        fuse_linking_box_layout = QGridLayout()
+        fuse_linking_box_layout.addWidget(QLabel("Fuse CH1 with fuse CH2"), 0, 0)
+        first_fuse_link_button = ButtonWithSwitch()
+        first_fuse_link_button.setText("Link")
+        first_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(2, "OUT1"))
+        fuse_linking_box_layout.addWidget(first_fuse_link_button, 0, 1)
+        fuse_linking_box_layout.addWidget(QLabel("Fuse CH2 with fuse CH3"), 1, 0)
+        second_fuse_link_button = ButtonWithSwitch()
+        second_fuse_link_button.setText("Link")
+        second_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(3, "OUT2"))
+        fuse_linking_box_layout.addWidget(second_fuse_link_button, 1, 1)
+        fuse_linking_box_layout.addWidget(QLabel("Fuse CH3 with fuse CH1"), 2, 0)
+        third_fuse_link_button = ButtonWithSwitch()
+        third_fuse_link_button.setText("Link")
+        third_fuse_link_button.clicked.connect(lambda: self.link_unlink_fuse(1, "OUT3"))
+        fuse_linking_box_layout.addWidget(third_fuse_link_button, 2, 1)
+        fuse_linking_box.setLayout(fuse_linking_box_layout)
+        fuse_options_box_layout.addWidget(fuse_linking_box, 1, 0)
+
         fuse_options_box.setLayout(fuse_options_box_layout)
         device_tab_layout.addWidget(fuse_options_box, 2, 0, 1, 2)
 
@@ -324,6 +363,18 @@ class Application(QWidget):
     #
     # def handleSpinChanged(self):
     #     print("stepVoltage")
+
+    def link_unlink_fuse(self, fuse_to_link, fuse_to_be_linked):
+        sender = self.sender()
+        if sender.isActivated:
+            self.send_command(lambda: self.power_supply.set_output_channel(fuse_to_be_linked))
+            self.send_command(lambda: self.power_supply.fuse_unlink(fuse_to_link))
+            sender.setText("Link")
+            sender.isActivated = False
+        else:
+            self.send_command(lambda: self.power_supply.set_fuse_link(fuse_to_link, fuse_to_be_linked))
+            sender.setText("Unlink")
+            sender.isActivated = True
 
     def change_fuse_state(self, state, channel):
         if state == Qt.Checked:
