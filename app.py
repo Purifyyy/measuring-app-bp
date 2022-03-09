@@ -16,14 +16,45 @@ available_multimeters = {
 }
 
 
-# class SpinBox(QDoubleSpinBox):
-#     stepChanged = pyqtSignal()
-#
-#     def stepBy(self, step):
-#         value = self.value()
-#         super(SpinBox, self).stepBy(step)
-#         if self.value() != value:
-#             self.stepChanged.emit()
+# SpinBox Up/Down signals credit: https://stackoverflow.com/a/65226649/10768248
+class SpinBox(QDoubleSpinBox):
+    stepChanged = pyqtSignal()
+    upClicked = pyqtSignal()
+    downClicked = pyqtSignal()
+
+    def stepBy(self, step):
+        value = self.value()
+        super(SpinBox, self).stepBy(step)
+        if self.value() != value:
+            self.stepChanged.emit()
+
+    def mousePressEvent(self, event):
+        event.ignore()
+
+    def mouseReleaseEvent(self, event):
+        opt = QStyleOptionSpinBox()
+        self.initStyleOption(opt)
+
+        control = self.style().hitTestComplexControl(
+            QStyle.CC_SpinBox, opt, event.pos(), self
+        )
+        if control == QStyle.SC_SpinBoxUp:
+            if self.maximum() != self.value():
+                self.upClicked.emit()
+                self.setValue(self.value() + self.singleStep())
+        elif control == QStyle.SC_SpinBoxDown:
+            if self.minimum() != self.value():
+                self.downClicked.emit()
+                self.setValue(self.value() - self.singleStep())
+        super().mouseReleaseEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Up or event.key() == Qt.Key_Down or \
+                event.key() == Qt.Key_PageUp or event.key() == Qt.Key_PageDown:
+            event.ignore()
+        else:
+            super().keyPressEvent(event)
+
 
 # Custom QComboBox, that comes with previously selected index, on currentIndexChanged signal
 class ComboBoxWithLast(QComboBox):
@@ -66,7 +97,8 @@ class Application(QWidget):
         self.tab_bar = self.make_tab_bar()
 
         self.setWindowTitle("Measure it")
-        self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QLabel, QPushButton, QComboBox, QTabWidget"
+        self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QLabel, QPushButton, QComboBox, QTabWidget, "
+                                                                "QDoubleSpinBox, QLineEdit"
                                                                 "{font-size: 11pt;"
                                                                 "font-weight: 500;"
                                                                 "font-family: Arial;}" +
@@ -336,37 +368,94 @@ class Application(QWidget):
         measurement_options_box.setLayout(measurement_options_box_layout)
         device_tab_layout.addWidget(measurement_options_box, 3, 0, 1, 2)
 
-        # voltage_box = QGroupBox("Voltage options")
-        # voltage_layout = QGridLayout()
-        # voltage_layout.addWidget(QLabel("Selected channel voltage:"), 0, 0)
-        # # voltage_value_dialog = QInputDialog.getDouble(minValue=0.000E+00, maxValue=3.2050E+01, value=1.000E+00)
-        # voltage_value = SpinBox()
-        # voltage_value.setRange(0, 3.2050E+01)
-        # voltage_value.setDecimals(3)
-        # voltage_value.setValue(0)
-        # voltage_value.editingFinished.connect(self.print_value)
-        # voltage_value.stepChanged.connect(self.handleSpinChanged)
-        # voltage_layout.addWidget(voltage_value)
-        #
-        # voltage_box.setLayout(voltage_layout)
-        # device_tab_layout.addWidget(voltage_box, 2, 0, 1, 2)
+        voltage_box = QGroupBox("Voltage options")
+        voltage_layout = QGridLayout()
+        voltage_layout.addWidget(QLabel("Channel 1      Voltage:"), 0, 0)
+        first_channel_voltage_value = SpinBox()
+        first_channel_voltage_value.setRange(0, 3.2050E+01)
+        first_channel_voltage_value.setDecimals(3)
+        first_channel_voltage_value.setValue(0)
+        first_channel_voltage_value.editingFinished.connect(
+            lambda: self.change_channel_voltage("OUT1", channel_box.currentText()))
+        first_channel_voltage_value.upClicked.connect(
+            lambda: self.increase_channel_voltage("OUT1", channel_box.currentText()))
+        first_channel_voltage_value.downClicked.connect(
+            lambda: self.decrease_channel_voltage("OUT1", channel_box.currentText()))
+        voltage_layout.addWidget(first_channel_voltage_value, 0, 1)
 
-        # param = 1
-        # fusestate = QPushButton()
-        # fusestate.setText("fuse state")
-        # fusestate.clicked.connect(lambda: self.send_command(lambda: self.power_supply.set_fuse_state(param, channel_box.currentText())))
-        # device_tab_layout.addWidget(fusestate, 2, 0)
+        voltage_layout.addWidget(QLabel("Channel 2      Voltage:"), 1, 0)
+        second_channel_voltage_value = SpinBox()
+        second_channel_voltage_value.setRange(0, 3.2050E+01)
+        second_channel_voltage_value.setDecimals(3)
+        second_channel_voltage_value.setValue(0)
+        second_channel_voltage_value.editingFinished.connect(
+            lambda: self.change_channel_voltage("OUT2", channel_box.currentText()))
+        second_channel_voltage_value.upClicked.connect(
+            lambda: self.increase_channel_voltage("OUT2", channel_box.currentText()))
+        second_channel_voltage_value.downClicked.connect(
+            lambda: self.decrease_channel_voltage("OUT2", channel_box.currentText()))
+        voltage_layout.addWidget(second_channel_voltage_value, 1, 1)
+
+        voltage_layout.addWidget(QLabel("Channel 3      Voltage:"), 2, 0)
+        third_channel_voltage_value = SpinBox()
+        third_channel_voltage_value.setRange(0, 3.2050E+01)
+        third_channel_voltage_value.setDecimals(3)
+        third_channel_voltage_value.setValue(0)
+        third_channel_voltage_value.editingFinished.connect(
+            lambda: self.change_channel_voltage("OUT3", channel_box.currentText()))
+        third_channel_voltage_value.upClicked.connect(
+            lambda: self.increase_channel_voltage("OUT3", channel_box.currentText()))
+        third_channel_voltage_value.downClicked.connect(
+            lambda: self.decrease_channel_voltage("OUT3", channel_box.currentText()))
+        voltage_layout.addWidget(third_channel_voltage_value, 2, 1)
+
+        voltage_layout.addWidget(QLabel("Voltage step size:"), 0, 2, 3, 1)
+        channel_voltage_step = SpinBox()
+        channel_voltage_step.setRange(0, 3.2050E+01)
+        channel_voltage_step.setDecimals(3)
+        channel_voltage_step.setValue(1)
+        channel_voltage_step.editingFinished.connect(lambda: first_channel_voltage_value.setSingleStep(
+            channel_voltage_step.value()))
+        channel_voltage_step.editingFinished.connect(lambda: second_channel_voltage_value.setSingleStep(
+            channel_voltage_step.value()))
+        channel_voltage_step.editingFinished.connect(lambda: third_channel_voltage_value.setSingleStep(
+            channel_voltage_step.value()))
+        channel_voltage_step.editingFinished.connect(self.volt_step_changed)
+        channel_voltage_step.stepChanged.connect(lambda: first_channel_voltage_value.setSingleStep(
+            channel_voltage_step.value()))
+        channel_voltage_step.stepChanged.connect(lambda: second_channel_voltage_value.setSingleStep(
+            channel_voltage_step.value()))
+        channel_voltage_step.stepChanged.connect(lambda: third_channel_voltage_value.setSingleStep(
+            channel_voltage_step.value()))
+        channel_voltage_step.stepChanged.connect(self.volt_step_changed)
+        voltage_layout.addWidget(channel_voltage_step, 0, 4, 3, 1)
+        voltage_box.setLayout(voltage_layout)
+        device_tab_layout.addWidget(voltage_box, 0, 2, 1, 2)
 
         self.switch_tab_bar()
 
         self.power_supply_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.power_supply_tab, "HMC8043")
 
-    # def print_value(self):
-    #     print("setVoltage")
-    #
-    # def handleSpinChanged(self):
-    #     print("stepVoltage")
+    def change_channel_voltage(self, affected_channel, selected_channel):
+        voltage = round(self.sender().value(), 3)
+        self.send_command(
+            lambda: self.power_supply.set_source_voltage_level_immediate_amplitude(voltage, affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def increase_channel_voltage(self, affected_channel, selected_channel):
+        self.send_command(
+            lambda: self.power_supply.vary_source_voltage_level_immediate_amplitude("UP", affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def decrease_channel_voltage(self, affected_channel, selected_channel):
+        self.send_command(
+            lambda: self.power_supply.vary_source_voltage_level_immediate_amplitude("DOWN", affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def volt_step_changed(self):
+        step = round(self.sender().value(), 3)
+        self.send_command(lambda: self.power_supply.set_source_voltage_level_step_increment(step))
 
     def link_unlink_fuse(self, fuse_to_link, fuse_to_be_linked, selected_channel):
         sender = self.sender()
