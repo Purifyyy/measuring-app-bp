@@ -324,7 +324,6 @@ class Application(QWidget):
         third_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT3")))
         third_fuse_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         fuse_state_box_layout.addWidget(third_fuse_trip_button, 2, 4)
-        # fuse_state_box_layout.setAlignment(Qt.AlignHCenter)
         fuse_state_box.setLayout(fuse_state_box_layout)
         fuse_options_box_layout.addWidget(fuse_state_box, 0, 0)
 
@@ -432,6 +431,73 @@ class Application(QWidget):
         voltage_box.setLayout(voltage_layout)
         device_tab_layout.addWidget(voltage_box, 0, 2, 1, 2)
 
+        current_box = QGroupBox("Current options")
+        current_layout = QGridLayout()
+        current_layout.addWidget(QLabel("Channel 1      Current:"), 0, 0)
+        first_channel_current_value = SpinBox()
+        first_channel_current_value.setRange(0.0005, 3.0000)
+        first_channel_current_value.setDecimals(4)
+        first_channel_current_value.setValue(0.0005)
+        first_channel_current_value.setSingleStep(1.0000E-01)
+        first_channel_current_value.editingFinished.connect(
+            lambda: self.change_channel_current("OUT1", channel_box.currentText()))
+        first_channel_current_value.upClicked.connect(
+            lambda: self.increase_channel_current("OUT1", channel_box.currentText()))
+        first_channel_current_value.downClicked.connect(
+            lambda: self.decrease_channel_current("OUT1", channel_box.currentText()))
+        current_layout.addWidget(first_channel_current_value, 0, 1)
+
+        current_layout.addWidget(QLabel("Channel 2      Current:"), 1, 0)
+        second_channel_current_value = SpinBox()
+        second_channel_current_value.setRange(0.0005, 3.0000)
+        second_channel_current_value.setDecimals(4)
+        second_channel_current_value.setValue(0.0005)
+        second_channel_current_value.setSingleStep(1.0000E-01)
+        second_channel_current_value.editingFinished.connect(
+            lambda: self.change_channel_current("OUT2", channel_box.currentText()))
+        second_channel_current_value.upClicked.connect(
+            lambda: self.increase_channel_current("OUT2", channel_box.currentText()))
+        second_channel_current_value.downClicked.connect(
+            lambda: self.decrease_channel_current("OUT2", channel_box.currentText()))
+        current_layout.addWidget(second_channel_current_value, 1, 1)
+
+        current_layout.addWidget(QLabel("Channel 3      Current:"), 2, 0)
+        third_channel_current_value = SpinBox()
+        third_channel_current_value.setRange(0.0005, 3.0000)
+        third_channel_current_value.setDecimals(4)
+        third_channel_current_value.setValue(0.0005)
+        third_channel_current_value.setSingleStep(1.0000E-01)
+        third_channel_current_value.editingFinished.connect(
+            lambda: self.change_channel_current("OUT3", channel_box.currentText()))
+        third_channel_current_value.upClicked.connect(
+            lambda: self.increase_channel_current("OUT3", channel_box.currentText()))
+        third_channel_current_value.downClicked.connect(
+            lambda: self.decrease_channel_current("OUT3", channel_box.currentText()))
+        current_layout.addWidget(third_channel_current_value, 2, 1)
+
+        current_layout.addWidget(QLabel("Current step size:"), 0, 2, 3, 1)
+        channel_current_step = SpinBox()
+        channel_current_step.setRange(5.0000E-04, 3.000E+00)
+        channel_current_step.setDecimals(4)
+        channel_current_step.setValue(1.0000E-01)
+        channel_current_step.editingFinished.connect(lambda: first_channel_current_value.setSingleStep(
+            channel_current_step.value()))
+        channel_current_step.editingFinished.connect(lambda: second_channel_current_value.setSingleStep(
+            channel_current_step.value()))
+        channel_current_step.editingFinished.connect(lambda: third_channel_current_value.setSingleStep(
+            channel_current_step.value()))
+        channel_current_step.editingFinished.connect(self.curr_step_changed)
+        channel_current_step.stepChanged.connect(lambda: first_channel_current_value.setSingleStep(
+            channel_current_step.value()))
+        channel_current_step.stepChanged.connect(lambda: second_channel_current_value.setSingleStep(
+            channel_current_step.value()))
+        channel_current_step.stepChanged.connect(lambda: third_channel_current_value.setSingleStep(
+            channel_current_step.value()))
+        channel_current_step.stepChanged.connect(self.curr_step_changed)
+        current_layout.addWidget(channel_current_step, 0, 4, 3, 1)
+        current_box.setLayout(current_layout)
+        device_tab_layout.addWidget(current_box, 1, 2, 1, 2)
+
         self.switch_tab_bar()
 
         self.power_supply_tab.setLayout(device_tab_layout)
@@ -456,6 +522,26 @@ class Application(QWidget):
     def volt_step_changed(self):
         step = round(self.sender().value(), 3)
         self.send_command(lambda: self.power_supply.set_source_voltage_level_step_increment(step))
+
+    def change_channel_current(self, affected_channel, selected_channel):
+        current = round(self.sender().value(), 4)
+        self.send_command(
+            lambda: self.power_supply.set_source_current_level_immediate_amplitude(current, affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def increase_channel_current(self, affected_channel, selected_channel):
+        self.send_command(
+            lambda: self.power_supply.vary_source_current_level_immediate_amplitude("UP", affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def decrease_channel_current(self, affected_channel, selected_channel):
+        self.send_command(
+            lambda: self.power_supply.vary_source_current_level_immediate_amplitude("DOWN", affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def curr_step_changed(self):
+        step = round(self.sender().value(), 4)
+        self.send_command(lambda: self.power_supply.set_source_current_level_step_increment(step))
 
     def link_unlink_fuse(self, fuse_to_link, fuse_to_be_linked, selected_channel):
         sender = self.sender()
