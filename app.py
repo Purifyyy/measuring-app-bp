@@ -498,10 +498,241 @@ class Application(QWidget):
         current_box.setLayout(current_layout)
         device_tab_layout.addWidget(current_box, 1, 2, 1, 2)
 
+        protection_options_box = QGroupBox("Protection options")
+        protection_options_box_layout = QGridLayout()
+        ovp_box = QGroupBox("OVP settings")
+        ovp_layout = QGridLayout()
+        ovp_layout.addWidget(QLabel("Channel 1    OVP value:"), 0, 0)
+        first_channel_ovp_value = QDoubleSpinBox()
+        first_channel_ovp_value.setValue(3.2050E+01)
+        first_channel_ovp_value.setRange(0, 3.2050E+01)
+        first_channel_ovp_value.setDecimals(3)
+        first_channel_ovp_value.setSingleStep(1.0000E-03)
+        first_channel_ovp_value.valueChanged.connect(lambda: self.send_command(
+            self.change_ovp_value("OUT1", channel_box.currentText())))
+        ovp_layout.addWidget(first_channel_ovp_value, 0, 1)
+        ovp_layout.addWidget(QLabel("Mode:"), 0, 2)
+        first_channel_ovp_mode = QComboBox()
+        first_channel_ovp_mode.addItem("Measured", "MEAS")
+        first_channel_ovp_mode.addItem("Protected", "PROT")
+        first_channel_ovp_mode.setCurrentIndex(-1)
+        first_channel_ovp_mode.currentIndexChanged.connect(lambda: self.change_ovp_mode("OUT1", channel_box.currentText()))
+        ovp_layout.addWidget(first_channel_ovp_mode, 0, 3)
+        first_ovp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                         animation_duration=100, checked=False, change_cursor=True)
+        first_ovp_switch.stateChanged.connect(
+            lambda: self.change_ovp_state("OUT1", channel_box.currentText()))
+        ovp_layout.addWidget(first_ovp_switch, 0, 4)
+        first_ovp_trip_button = QPushButton()
+        first_ovp_trip_button.setText("Trip")
+        first_ovp_trip_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_voltage_protection_trip("OUT1")))
+        first_ovp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        ovp_layout.addWidget(first_ovp_trip_button, 0, 5)
+        first_ovp_clear_button = QPushButton()
+        first_ovp_clear_button.setText("Clear")
+        first_ovp_clear_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_voltage_protection_clear("OUT1")))
+        first_ovp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        ovp_layout.addWidget(first_ovp_clear_button, 0, 6)
+
+        ovp_layout.addWidget(QLabel("Channel 2    OVP value:"), 1, 0)
+        second_channel_ovp_value = QDoubleSpinBox()
+        second_channel_ovp_value.setValue(3.2050E+01)
+        second_channel_ovp_value.setRange(0, 3.2050E+01)
+        second_channel_ovp_value.setDecimals(3)
+        second_channel_ovp_value.setSingleStep(1.0000E-03)
+        second_channel_ovp_value.valueChanged.connect(lambda: self.send_command(
+            self.change_ovp_value("OUT2", channel_box.currentText())))
+        ovp_layout.addWidget(second_channel_ovp_value, 1, 1)
+        ovp_layout.addWidget(QLabel("Mode:"), 1, 2)
+        second_channel_ovp_mode = QComboBox()
+        second_channel_ovp_mode.addItem("Measured", "MEAS")
+        second_channel_ovp_mode.addItem("Protected", "PROT")
+        second_channel_ovp_mode.setCurrentIndex(-1)
+        second_channel_ovp_mode.currentIndexChanged.connect(lambda: self.change_ovp_mode("OUT2", channel_box.currentText()))
+        ovp_layout.addWidget(second_channel_ovp_mode, 1, 3)
+        second_ovp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                          animation_duration=100, checked=False, change_cursor=True)
+        second_ovp_switch.stateChanged.connect(
+            lambda: self.change_ovp_state("OUT2", channel_box.currentText()))
+        ovp_layout.addWidget(second_ovp_switch, 1, 4)
+        second_ovp_trip_button = QPushButton()
+        second_ovp_trip_button.setText("Trip")
+        second_ovp_trip_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_voltage_protection_trip("OUT2")))
+        second_ovp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        ovp_layout.addWidget(second_ovp_trip_button, 1, 5)
+        second_ovp_clear_button = QPushButton()
+        second_ovp_clear_button.setText("Clear")
+        second_ovp_clear_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_voltage_protection_clear("OUT2")))
+        second_ovp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        ovp_layout.addWidget(second_ovp_clear_button, 1, 6)
+
+        ovp_layout.addWidget(QLabel("Channel 3    OVP value:"), 2, 0)
+        third_channel_ovp_value = QDoubleSpinBox()
+        third_channel_ovp_value.setValue(3.2050E+01)
+        third_channel_ovp_value.setRange(0, 3.2050E+01)
+        third_channel_ovp_value.setDecimals(3)
+        third_channel_ovp_value.setSingleStep(1.0000E-03)
+        third_channel_ovp_value.valueChanged.connect(lambda: self.send_command(
+            self.change_ovp_value("OUT3", channel_box.currentText())))
+        ovp_layout.addWidget(third_channel_ovp_value, 2, 1)
+        ovp_layout.addWidget(QLabel("Mode:"), 2, 2)
+        third_channel_ovp_mode = QComboBox()
+        third_channel_ovp_mode.addItem("Measured", "MEAS")
+        third_channel_ovp_mode.addItem("Protected", "PROT")
+        third_channel_ovp_mode.setCurrentIndex(-1)
+        third_channel_ovp_mode.currentIndexChanged.connect(lambda: self.change_ovp_mode("OUT3", channel_box.currentText()))
+        ovp_layout.addWidget(third_channel_ovp_mode, 2, 3)
+        third_ovp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                         animation_duration=100, checked=False, change_cursor=True)
+        third_ovp_switch.stateChanged.connect(
+            lambda: self.change_ovp_state("OUT3", channel_box.currentText()))
+        ovp_layout.addWidget(third_ovp_switch, 2, 4)
+        third_ovp_trip_button = QPushButton()
+        third_ovp_trip_button.setText("Trip")
+        third_ovp_trip_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_voltage_protection_trip("OUT3")))
+        third_ovp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        ovp_layout.addWidget(third_ovp_trip_button, 2, 5)
+        third_ovp_clear_button = QPushButton()
+        third_ovp_clear_button.setText("Clear")
+        third_ovp_clear_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_voltage_protection_clear("OUT3")))
+        third_ovp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        ovp_layout.addWidget(third_ovp_clear_button, 2, 6)
+
+        ovp_box.setLayout(ovp_layout)
+
+        opp_box = QGroupBox("OPP settings")
+        opp_layout = QGridLayout()
+        opp_layout.addWidget(QLabel("Channel 1    OPP value:"), 0, 0)
+        first_channel_opp_value = QDoubleSpinBox()
+        first_channel_opp_value.setValue(3.300E+01)
+        first_channel_opp_value.setRange(0, 3.300E+01)
+        first_channel_opp_value.setDecimals(2)
+        first_channel_opp_value.setSingleStep(1.0000E-02)
+        first_channel_opp_value.valueChanged.connect(lambda: self.send_command(
+            self.change_opp_value("OUT1", channel_box.currentText())))
+        opp_layout.addWidget(first_channel_opp_value, 0, 1)
+        first_opp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                         animation_duration=100, checked=False, change_cursor=True)
+        first_opp_switch.stateChanged.connect(
+            lambda: self.change_opp_state("OUT1", channel_box.currentText()))
+        opp_layout.addWidget(first_opp_switch, 0, 2)
+        first_opp_trip_button = QPushButton()
+        first_opp_trip_button.setText("Trip")
+        first_opp_trip_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_power_protection_trip("OUT1")))
+        first_opp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        opp_layout.addWidget(first_opp_trip_button, 0, 3)
+        first_opp_clear_button = QPushButton()
+        first_opp_clear_button.setText("Clear")
+        first_opp_clear_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_power_protection_clear("OUT1")))
+        first_opp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        opp_layout.addWidget(first_opp_clear_button, 0, 4)
+
+        opp_layout.addWidget(QLabel("Channel 2    OPP value:"), 1, 0)
+        second_channel_opp_value = QDoubleSpinBox()
+        second_channel_opp_value.setValue(3.300E+01)
+        second_channel_opp_value.setRange(0, 3.300E+01)
+        second_channel_opp_value.setDecimals(2)
+        second_channel_opp_value.setSingleStep(1.0000E-02)
+        second_channel_opp_value.valueChanged.connect(lambda: self.send_command(
+            self.change_opp_value("OUT2", channel_box.currentText())))
+        opp_layout.addWidget(second_channel_opp_value, 1, 1)
+        second_opp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                          animation_duration=100, checked=False, change_cursor=True)
+        second_opp_switch.stateChanged.connect(
+            lambda: self.change_opp_state("OUT2", channel_box.currentText()))
+        opp_layout.addWidget(second_opp_switch, 1, 2)
+        second_opp_trip_button = QPushButton()
+        second_opp_trip_button.setText("Trip")
+        second_opp_trip_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_power_protection_trip("OUT2")))
+        second_opp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        opp_layout.addWidget(second_opp_trip_button, 1, 3)
+        second_opp_clear_button = QPushButton()
+        second_opp_clear_button.setText("Clear")
+        second_opp_clear_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_power_protection_clear("OUT2")))
+        second_opp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        opp_layout.addWidget(second_opp_clear_button, 1, 4)
+
+        opp_layout.addWidget(QLabel("Channel 3    OPP value:"), 2, 0)
+        third_channel_opp_value = QDoubleSpinBox()
+        third_channel_opp_value.setValue(3.300E+01)
+        third_channel_opp_value.setRange(0, 3.300E+01)
+        third_channel_opp_value.setDecimals(2)
+        third_channel_opp_value.setSingleStep(1.0000E-02)
+        third_channel_opp_value.valueChanged.connect(lambda: self.send_command(
+            self.change_opp_value("OUT3", channel_box.currentText())))
+        opp_layout.addWidget(third_channel_opp_value, 2, 1)
+        third_opp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                         animation_duration=100, checked=False, change_cursor=True)
+        third_opp_switch.stateChanged.connect(
+            lambda: self.change_opp_state("OUT3", channel_box.currentText()))
+        opp_layout.addWidget(third_opp_switch, 2, 2)
+        third_opp_trip_button = QPushButton()
+        third_opp_trip_button.setText("Trip")
+        third_opp_trip_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_power_protection_trip("OUT3")))
+        third_opp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        opp_layout.addWidget(third_opp_trip_button, 2, 3)
+        third_opp_clear_button = QPushButton()
+        third_opp_clear_button.setText("Clear")
+        third_opp_clear_button.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.source_power_protection_clear("OUT3")))
+        third_opp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        opp_layout.addWidget(third_opp_clear_button, 2, 4)
+
+        opp_box.setLayout(opp_layout)
+
+        protection_options_box_layout.addWidget(ovp_box, 0, 0)
+        protection_options_box_layout.addWidget(opp_box, 1, 0)
+        protection_options_box.setLayout(protection_options_box_layout)
+        device_tab_layout.addWidget(protection_options_box, 2, 2, 1, 2)
+
         self.switch_tab_bar()
 
         self.power_supply_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.power_supply_tab, "HMC8043")
+
+    def change_ovp_mode(self, affected_channel, selected_channel):
+        self.send_command(lambda: self.power_supply.set_source_voltage_protection_mode(
+            self.sender().itemData(self.sender().currentIndex()), affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def change_opp_state(self, affected_channel, selected_channel):
+        state = self.sender().checkState()
+        if state == Qt.Checked:
+            self.send_command(lambda: self.power_supply.set_source_power_protection_state(1, affected_channel))
+        elif state == Qt.Unchecked:
+            self.send_command(lambda: self.power_supply.set_source_power_protection_state(0, affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def change_opp_value(self, affected_channel, selected_channel):
+        pow_value = round(self.sender().value(), 2)
+        self.send_command(
+            lambda: self.power_supply.set_source_power_protection_level(pow_value, affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def change_ovp_state(self, affected_channel, selected_channel):
+        state = self.sender().checkState()
+        if state == Qt.Checked:
+            self.send_command(lambda: self.power_supply.set_source_voltage_protection_state(1, affected_channel))
+        elif state == Qt.Unchecked:
+            self.send_command(lambda: self.power_supply.set_source_voltage_protection_state(0, affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
+    def change_ovp_value(self, affected_channel, selected_channel):
+        volt_value = round(self.sender().value(), 3)
+        self.send_command(
+            lambda: self.power_supply.set_source_voltage_protection_level(volt_value, affected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
 
     def change_channel_voltage(self, affected_channel, selected_channel):
         voltage = round(self.sender().value(), 3)
