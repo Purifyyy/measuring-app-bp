@@ -348,7 +348,7 @@ class Application(QWidget):
         fuse_options_box_layout.addWidget(fuse_linking_box, 1, 0)
 
         fuse_options_box.setLayout(fuse_options_box_layout)
-        device_tab_layout.addWidget(fuse_options_box, 2, 0, 1, 2)
+        device_tab_layout.addWidget(fuse_options_box, 3, 0, 1, 2)
 
         measurement_options_box = QGroupBox("Measurement options")
         measurement_options_box_layout = QGridLayout()
@@ -365,7 +365,50 @@ class Application(QWidget):
             lambda: self.send_command(lambda: measurement_box.currentData()(channel_box.currentText())))
         measurement_options_box_layout.addWidget(measure_selected_value, 0, 2)
         measurement_options_box.setLayout(measurement_options_box_layout)
-        device_tab_layout.addWidget(measurement_options_box, 3, 0, 1, 2)
+        device_tab_layout.addWidget(measurement_options_box, 2, 0, 1, 2)
+
+        ainput_box = QGroupBox("Analog In function")
+        ainput_layout = QGridLayout()
+        input_unit_label = QLabel("Input unit:")
+        input_unit_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        ainput_layout.addWidget(input_unit_label, 0, 0)
+        ainput_unit = QComboBox()
+        ainput_unit.addItem("Voltage", "VOLT")
+        ainput_unit.addItem("Current", "CURR")
+        ainput_layout.addWidget(ainput_unit, 0, 1)
+        input_mode_label = QLabel("Input unit:")
+        input_mode_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        ainput_layout.addWidget(input_mode_label, 0, 2)
+        ainput_mode = QComboBox()
+        ainput_mode.addItem("Linear", "LIN")
+        ainput_mode.addItem("Step", "STEP")
+        ainput_layout.addWidget(ainput_mode, 0, 4)
+        ainput_layout.addWidget(QLabel("Channel 1:"), 1, 0, 1, 2)
+        first_channel_ainput_state = ButtonWithSwitch()
+        first_channel_ainput_state.setText("Activate")
+        ainput_layout.addWidget(first_channel_ainput_state, 1, 1, 1, 2)
+        first_channel_ainput_state.clicked.connect(lambda: self.setup_channel_ainput(
+            ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
+            "OUT1", channel_box.currentText()))
+
+        ainput_layout.addWidget(QLabel("Channel 2:"), 2, 0, 1, 2)
+        second_channel_ainput_state = ButtonWithSwitch()
+        second_channel_ainput_state.setText("Activate")
+        ainput_layout.addWidget(second_channel_ainput_state, 2, 1, 1, 2)
+        second_channel_ainput_state.clicked.connect(lambda: self.setup_channel_ainput(
+            ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
+            "OUT2", channel_box.currentText()))
+
+        ainput_layout.addWidget(QLabel("Channel 3:"), 3, 0, 1, 2)
+        third_channel_ainput_state = ButtonWithSwitch()
+        third_channel_ainput_state.setText("Activate")
+        ainput_layout.addWidget(third_channel_ainput_state, 3, 1, 1, 2)
+        third_channel_ainput_state.clicked.connect(lambda: self.setup_channel_ainput(
+            ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
+            "OUT3", channel_box.currentText()))
+
+        ainput_box.setLayout(ainput_layout)
+        device_tab_layout.addWidget(ainput_box, 0, 2, 1, 2)
 
         voltage_box = QGroupBox("Voltage options")
         voltage_layout = QGridLayout()
@@ -429,7 +472,7 @@ class Application(QWidget):
         channel_voltage_step.stepChanged.connect(self.volt_step_changed)
         voltage_layout.addWidget(channel_voltage_step, 0, 4, 3, 1)
         voltage_box.setLayout(voltage_layout)
-        device_tab_layout.addWidget(voltage_box, 0, 2, 1, 2)
+        device_tab_layout.addWidget(voltage_box, 1, 2, 1, 2)
 
         current_box = QGroupBox("Current options")
         current_layout = QGridLayout()
@@ -496,7 +539,7 @@ class Application(QWidget):
         channel_current_step.stepChanged.connect(self.curr_step_changed)
         current_layout.addWidget(channel_current_step, 0, 4, 3, 1)
         current_box.setLayout(current_layout)
-        device_tab_layout.addWidget(current_box, 1, 2, 1, 2)
+        device_tab_layout.addWidget(current_box, 2, 2, 1, 2)
 
         protection_options_box = QGroupBox("Protection options")
         protection_options_box_layout = QGridLayout()
@@ -694,12 +737,38 @@ class Application(QWidget):
         protection_options_box_layout.addWidget(ovp_box, 0, 0)
         protection_options_box_layout.addWidget(opp_box, 1, 0)
         protection_options_box.setLayout(protection_options_box_layout)
-        device_tab_layout.addWidget(protection_options_box, 2, 2, 1, 2)
+        device_tab_layout.addWidget(protection_options_box, 3, 2, 1, 2)
 
         self.switch_tab_bar()
 
         self.power_supply_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.power_supply_tab, "HMC8043")
+
+    def setup_channel_ainput(self, ainput_unit, ainput_mode, affected_channel, selected_channel):
+        sender = self.sender()
+        if sender.isActivated:
+            self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(0, affected_channel))
+            sender.setText("Activate")
+            sender.isActivated = False
+        else:
+            if ainput_mode == "STEP":
+                user_input, was_success = self.get_user_input(
+                    "STEP threshold", "Set the threshold for the Analog In mode STEP of channel "
+                                      + affected_channel + "(0V to 10V)")
+                if was_success:
+                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_mode(ainput_mode))
+                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_input(ainput_unit))
+                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_threshold(user_input))
+                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(1, affected_channel))
+                    sender.setText("Disable")
+                    sender.isActivated = True
+            else:
+                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_mode(ainput_mode))
+                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_input(ainput_unit))
+                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(1, affected_channel))
+                sender.setText("Disable")
+                sender.isActivated = True
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
 
     def change_ovp_mode(self, affected_channel, selected_channel):
         self.send_command(lambda: self.power_supply.set_source_voltage_protection_mode(
