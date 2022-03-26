@@ -21,26 +21,14 @@ class InstrumentDriver:
 
     def __init__(self, address):
         self.rm = pyvisa.ResourceManager()
-        # HMC804x/HMC8012 Programmers Manual, 1.1.2 Ethernet (LAN) Interface
-        # USB[board]::manufacturer ID::model code::serial number[::USB interface number][::INSTR]
-        # ASRL[0]::host address::serial port::INSTR
-        # TCPIP[board]::host address[::LAN device name][::INSTR]
-        # TCPIP[board]::host address::port::SOCKET
-        # self.manager = rm.open_resource('TCPIP::' + str(address) + '::5025::SOCKET')
-        #self.manager = self.rm.open_resource(address)
+        self.manager = self.rm.open_resource(address)
+        # self.manager.read_termination = '\n'
+        # self.manager.write_termination = '\n'
+        self.idn = ((self.manager.query("*IDN?")).split(","))[1]
 
-        # Odporucane pyvisa manualom, uvidim ci bude treba
-        # self.read_termination = '\n'
-        # self.write_termination = '\n'
-
-        # HAMEG,‹device type›,‹serial number›,‹firmwareversion›
-        # Example: HAMEG,HMC8012,12345,01.000
-        #self.idn = ((self.manager.query("*IDN?")).split(","))[1]
-
-    def __del__(self):
-        #self.manager.close()
+    def close(self):
+        self.manager.close()
         self.rm.close()
-        print("closing pyvisa resource")
 
     @property
     def idn(self):
