@@ -367,7 +367,10 @@ class Application(QWidget):
         measurement_options_box.setLayout(measurement_options_box_layout)
         device_tab_layout.addWidget(measurement_options_box, 2, 0, 1, 2)
 
-        ainput_box = QGroupBox("Analog In function")
+        ainput_ramp_box = QGroupBox("Analog In && EasyRamp")
+        ainput_ramp_layout = QGridLayout()
+
+        ainput_box = QGroupBox("Analog In options")
         ainput_layout = QGridLayout()
         input_unit_label = QLabel("Input unit:")
         input_unit_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -376,39 +379,73 @@ class Application(QWidget):
         ainput_unit.addItem("Voltage", "VOLT")
         ainput_unit.addItem("Current", "CURR")
         ainput_layout.addWidget(ainput_unit, 0, 1)
-        input_mode_label = QLabel("Input unit:")
-        input_mode_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        input_mode_label = QLabel("Input mode:")
         ainput_layout.addWidget(input_mode_label, 0, 2)
         ainput_mode = QComboBox()
         ainput_mode.addItem("Linear", "LIN")
         ainput_mode.addItem("Step", "STEP")
         ainput_layout.addWidget(ainput_mode, 0, 4)
-        ainput_layout.addWidget(QLabel("Channel 1:"), 1, 0, 1, 2)
+        ainput_layout.addWidget(QLabel("Channel 1"), 1, 0)
         first_channel_ainput_state = ButtonWithSwitch()
         first_channel_ainput_state.setText("Activate")
-        ainput_layout.addWidget(first_channel_ainput_state, 1, 1, 1, 2)
-        first_channel_ainput_state.clicked.connect(lambda: self.setup_channel_ainput(
+        ainput_layout.addWidget(first_channel_ainput_state, 1, 1, 1, 4)
+        first_channel_ainput_state.clicked.connect(lambda: self.send_command(self.setup_channel_ainput(
             ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
-            "OUT1", channel_box.currentText()))
+            "OUT1", channel_box.currentText())))
 
-        ainput_layout.addWidget(QLabel("Channel 2:"), 2, 0, 1, 2)
+        ainput_layout.addWidget(QLabel("Channel 2"), 2, 0)
         second_channel_ainput_state = ButtonWithSwitch()
         second_channel_ainput_state.setText("Activate")
-        ainput_layout.addWidget(second_channel_ainput_state, 2, 1, 1, 2)
-        second_channel_ainput_state.clicked.connect(lambda: self.setup_channel_ainput(
+        ainput_layout.addWidget(second_channel_ainput_state, 2, 1, 1, 4)
+        second_channel_ainput_state.clicked.connect(lambda: self.send_command(self.setup_channel_ainput(
             ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
-            "OUT2", channel_box.currentText()))
+            "OUT2", channel_box.currentText())))
 
-        ainput_layout.addWidget(QLabel("Channel 3:"), 3, 0, 1, 2)
+        ainput_layout.addWidget(QLabel("Channel 3"), 3, 0)
         third_channel_ainput_state = ButtonWithSwitch()
         third_channel_ainput_state.setText("Activate")
-        ainput_layout.addWidget(third_channel_ainput_state, 3, 1, 1, 2)
-        third_channel_ainput_state.clicked.connect(lambda: self.setup_channel_ainput(
+        ainput_layout.addWidget(third_channel_ainput_state, 3, 1, 1, 4)
+        third_channel_ainput_state.clicked.connect(lambda: self.send_command(self.setup_channel_ainput(
             ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
-            "OUT3", channel_box.currentText()))
+            "OUT3", channel_box.currentText())))
 
         ainput_box.setLayout(ainput_layout)
-        device_tab_layout.addWidget(ainput_box, 0, 2, 1, 2)
+        ainput_ramp_layout.addWidget(ainput_box, 0, 0)
+
+        easyramp_box = QGroupBox("EasyRamp options")
+        easyramp_layout = QGridLayout()
+        ramp_duration_label = QLabel("Ramp duration:")
+        easyramp_layout.addWidget(ramp_duration_label, 0, 0)
+        easyramp_duration = QDoubleSpinBox()
+        easyramp_duration.setMinimum(1.00E-02)
+        easyramp_duration.setMaximum(1.000E+01)
+        easyramp_duration.editingFinished.connect(lambda: self.send_command(
+            lambda: self.power_supply.set_source_voltage_ramp_duration(easyramp_duration.value())))
+        easyramp_layout.addWidget(easyramp_duration, 0, 1)
+
+        first_channel_easyramp_state = ButtonWithSwitch()
+        first_channel_easyramp_state.setText("Activate")
+        easyramp_layout.addWidget(first_channel_easyramp_state, 1, 0, 1, 2)
+        first_channel_easyramp_state.clicked.connect(lambda: self.send_command(
+            self.set_easyramp_state("OUT1", channel_box.currentText())))
+
+        second_channel_easyramp_state = ButtonWithSwitch()
+        second_channel_easyramp_state.setText("Activate")
+        easyramp_layout.addWidget(second_channel_easyramp_state, 2, 0, 1, 2)
+        second_channel_easyramp_state.clicked.connect(lambda: self.send_command(
+            self.set_easyramp_state("OUT2", channel_box.currentText())))
+
+        third_channel_easyramp_state = ButtonWithSwitch()
+        third_channel_easyramp_state.setText("Activate")
+        easyramp_layout.addWidget(third_channel_easyramp_state, 3, 0, 1, 2)
+        third_channel_easyramp_state.clicked.connect(lambda: self.send_command(
+            self.set_easyramp_state("OUT3", channel_box.currentText())))
+
+        easyramp_box.setLayout(easyramp_layout)
+        ainput_ramp_layout.addWidget(easyramp_box, 0, 1)
+
+        ainput_ramp_box.setLayout(ainput_ramp_layout)
+        device_tab_layout.addWidget(ainput_ramp_box, 0, 2, 1, 2)
 
         voltage_box = QGroupBox("Voltage options")
         voltage_layout = QGridLayout()
@@ -744,6 +781,18 @@ class Application(QWidget):
         self.power_supply_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.power_supply_tab, "HMC8043")
 
+    def set_easyramp_state(self, affected_channel, selected_channel):
+        sender = self.sender()
+        if sender.isActivated:
+            self.send_command(lambda: self.power_supply.set_source_voltage_ramp_state(0, affected_channel))
+            sender.setText("Activate")
+            sender.isActivated = False
+        else:
+            self.send_command(lambda: self.power_supply.set_source_voltage_ramp_state(1, affected_channel))
+            sender.setText("Disable")
+            sender.isActivated = True
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+
     def setup_channel_ainput(self, ainput_unit, ainput_mode, affected_channel, selected_channel):
         sender = self.sender()
         if sender.isActivated:
@@ -1071,11 +1120,11 @@ class Application(QWidget):
             "HMC8012": "01234",
             "HMC8043": "56789"
         }
-        rm = pyvisa.ResourceManager()
-        resources = rm.list_resources()
-        for res in resources:
-            inst = rm.open_resource(res)
-            devices[((inst.query("*IDN?")).split(","))[1]] = res
-            inst.close()
-        rm.close()
+        # rm = pyvisa.ResourceManager()
+        # resources = rm.list_resources()
+        # for res in resources:
+        #     inst = rm.open_resource(res)
+        #     devices[((inst.query("*IDN?")).split(","))[1]] = res
+        #     inst.close()
+        # rm.close()
         return devices

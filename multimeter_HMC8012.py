@@ -8,12 +8,14 @@ class DigitalMultimeterHMC8012(InstrumentDriver):
 
     @exception_handler
     def toggle_calculate_function(self, parameter='ON'):
+        """Write"""
         # CALCulate[:STATe] {OFF | ON}
         # Turns with the CALC FUNC command selected calculation function ON or OFF
         self.manager.write("CALC " + str(parameter))
 
     @exception_handler
     def calculate_function_state(self):
+        """Query"""
         # CALCulate[:STATe]?
         # Returns the state (ON/OFF) of the CALC FUNC command selected calculation function
         value = self.manager.query("CALC?")

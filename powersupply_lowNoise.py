@@ -1,4 +1,5 @@
 import serial
+from serial import *
 
 
 class PowerSupplyLowNoise:
@@ -7,10 +8,11 @@ class PowerSupplyLowNoise:
         try:
             # self.ser = serial.serial_for_url(url, ...) ---> url – Device name, number or URL
             self.ser = serial.Serial(
-                port=address
-                # , baudrate=38400,
-                # timeout=0,
-                # write_timeout=0.1
+                port=address,
+                baudrate=115200,
+                bytesize=EIGHTBITS,
+                parity=PARITY_NONE,
+                stopbits=STOPBITS_ONE
             )
         except serial.SerialException:
             print("connection attempt error")
