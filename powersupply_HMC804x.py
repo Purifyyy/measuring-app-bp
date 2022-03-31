@@ -11,7 +11,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         """Write"""
         # INSTrument[:SELect] {OUTPut1 | OUTPut2 | OUTPut3 | OUT1 | OUT2 | OUT3}
         # Selects a channel
-        # print("INST " + str(parameter))
         self.manager.write("INST " + str(parameter))
 
     @exception_handler
@@ -165,11 +164,15 @@ class PowerSupplyHMC804x(InstrumentDriver):
         return value
 
     @exception_handler
-    def set_measure_scalar_energy_state(self, parameter='1'):
+    def set_measure_scalar_energy_state(self, parameter='1', channel='OUT1'):
         """Write"""
         # MEASure[:SCALar]:ENERgy:STATe {ON | OFF | 1 | 0}
         # Activates or deactivates the energy meter function
+        ret = self.set_output_channel(channel)
+        if not ret[0]:
+            return ret
         self.manager.write("MEAS:ENER:STAT " + str(parameter))
+        # print("MEAS:ENER:STAT " + str(parameter))
 
     @exception_handler
     def get_measure_scalar_energy_state(self, channel='OUT1'):
@@ -191,6 +194,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("MEAS:ENER:RES")
+        # print("MEAS:ENER:RES")
 
     @exception_handler
     def set_output_state(self, parameter='0', channel='OUT1'):
@@ -489,6 +493,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT:AINP " + str(parameter))
+        # print("VOLT:AINP " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ainput_state(self, channel='OUT1'):
@@ -507,6 +512,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         # [SOURce:]VOLTage:AINPut:INPut {VOLTage | CURRent}
         # Selects the input unit of the Analog In connector (terminal block) on the rear panel
         self.manager.write("VOLT:AINP:INP " + str(parameter))
+        # print("VOLT:AINP:INP " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ainput_input(self):
@@ -524,6 +530,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  LINear: Output voltage linear to the input voltage
         #  STEP: Reference value or zero depending on threshold
         self.manager.write("VOLT:AINP:MODE " + str(parameter))
+        # print("VOLT:AINP:MODE " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ainput_mode(self):
@@ -543,6 +550,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  MAX: 1.00E+01
         #  DEF: 1.0E+00
         self.manager.write("VOLT:AINP:THR " + str(parameter))
+        # print("VOLT:AINP:THR " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ainput_threshold(self):
@@ -561,6 +569,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT:RAMP " + str(parameter))
+        # print("VOLT:RAMP " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ramp_state(self, channel='OUT1'):
@@ -583,6 +592,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  MAX: 1.000E+01 (VOLT:RAMP:DUR 10)
         #  DEF: 1.00E-02 (VOLT:RAMP:DUR 0.01)
         self.manager.write("VOLT:RAMP:DUR " + str(parameter))
+        # print("VOLT:RAMP:DUR " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ramp_duration(self):

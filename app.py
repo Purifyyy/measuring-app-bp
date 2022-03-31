@@ -776,10 +776,70 @@ class Application(QWidget):
         protection_options_box.setLayout(protection_options_box_layout)
         device_tab_layout.addWidget(protection_options_box, 3, 2, 1, 2)
 
+        energy_meter_box = QGroupBox("Energy meter options")
+        energy_meter_layout = QGridLayout()
+
+        energy_meter_layout.addWidget(QLabel("Channel 1 energy meter:"), 0, 0)
+        first_channel_energy_meter_state = ButtonWithSwitch()
+        first_channel_energy_meter_state.setText("Activate")
+        energy_meter_layout.addWidget(first_channel_energy_meter_state, 0, 1)
+        first_channel_energy_meter_state.clicked.connect(lambda: self.send_command(
+            self.set_energy_meter_state("OUT1", channel_box.currentText())))
+
+        first_channel_energy_meter_reset = QPushButton()
+        first_channel_energy_meter_reset.setText("Reset")
+        first_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.measure_scalar_energy_reset("OUT1")))
+        first_channel_energy_meter_reset.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        energy_meter_layout.addWidget(first_channel_energy_meter_reset, 0, 2)
+
+        energy_meter_layout.addWidget(QLabel("Channel 2 energy meter:"), 1, 0)
+        second_channel_energy_meter_state = ButtonWithSwitch()
+        second_channel_energy_meter_state.setText("Activate")
+        energy_meter_layout.addWidget(second_channel_energy_meter_state, 1, 1)
+        second_channel_energy_meter_state.clicked.connect(lambda: self.send_command(
+            self.set_energy_meter_state("OUT2", channel_box.currentText())))
+
+        second_channel_energy_meter_reset = QPushButton()
+        second_channel_energy_meter_reset.setText("Reset")
+        second_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.measure_scalar_energy_reset("OUT2")))
+        second_channel_energy_meter_reset.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        energy_meter_layout.addWidget(second_channel_energy_meter_reset, 1, 2)
+
+        energy_meter_layout.addWidget(QLabel("Channel 3 energy meter:"), 2, 0)
+        third_channel_energy_meter_state = ButtonWithSwitch()
+        third_channel_energy_meter_state.setText("Activate")
+        energy_meter_layout.addWidget(third_channel_energy_meter_state, 2, 1)
+        third_channel_energy_meter_state.clicked.connect(lambda: self.send_command(
+            self.set_energy_meter_state("OUT3", channel_box.currentText())))
+
+        third_channel_energy_meter_reset = QPushButton()
+        third_channel_energy_meter_reset.setText("Reset")
+        third_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.measure_scalar_energy_reset("OUT3")))
+        third_channel_energy_meter_reset.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        energy_meter_layout.addWidget(third_channel_energy_meter_reset, 2, 2)
+
+        energy_meter_box.setLayout(energy_meter_layout)
+        device_tab_layout.addWidget(energy_meter_box, 0, 4, 1, 2)
+
         self.switch_tab_bar()
 
         self.power_supply_tab.setLayout(device_tab_layout)
         self.tab_bar.addTab(self.power_supply_tab, "HMC8043")
+
+    def set_energy_meter_state(self, affected_channel, selected_channel):
+        sender = self.sender()
+        if sender.isActivated:
+            self.send_command(lambda: self.power_supply.set_measure_scalar_energy_state(0, affected_channel))
+            sender.setText("Activate")
+            sender.isActivated = False
+        else:
+            self.send_command(lambda: self.power_supply.set_measure_scalar_energy_state(1, affected_channel))
+            sender.setText("Deactivate")
+            sender.isActivated = True
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
 
     def set_easyramp_state(self, affected_channel, selected_channel):
         sender = self.sender()
@@ -789,7 +849,7 @@ class Application(QWidget):
             sender.isActivated = False
         else:
             self.send_command(lambda: self.power_supply.set_source_voltage_ramp_state(1, affected_channel))
-            sender.setText("Disable")
+            sender.setText("Deactivate")
             sender.isActivated = True
         self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
 
@@ -809,13 +869,13 @@ class Application(QWidget):
                     self.send_command(lambda: self.power_supply.set_source_voltage_ainput_input(ainput_unit))
                     self.send_command(lambda: self.power_supply.set_source_voltage_ainput_threshold(user_input))
                     self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(1, affected_channel))
-                    sender.setText("Disable")
+                    sender.setText("Deactivate")
                     sender.isActivated = True
             else:
                 self.send_command(lambda: self.power_supply.set_source_voltage_ainput_mode(ainput_mode))
                 self.send_command(lambda: self.power_supply.set_source_voltage_ainput_input(ainput_unit))
                 self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(1, affected_channel))
-                sender.setText("Disable")
+                sender.setText("Deactivate")
                 sender.isActivated = True
         self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
 
@@ -1046,7 +1106,7 @@ class Application(QWidget):
             sender.isActivated = False
         else:
             self.send_command(self.multimeter.toggle_calculate_function)
-            sender.setText("Disable")
+            sender.setText("Deactivate")
             sender.isActivated = True
 
     def configure_temperature(self, unit, probe, sensor):
