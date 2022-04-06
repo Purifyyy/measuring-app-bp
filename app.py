@@ -6,9 +6,11 @@ from QSwitchControl import SwitchControl
 
 from multimeter_HMC8012 import DigitalMultimeterHMC8012
 from powersupply_HMC804x import PowerSupplyHMC804x
+from powersupply_lowNoise import PowerSupplyLowNoise
 
 available_power_supplies = {
-    "HMC8043": PowerSupplyHMC804x
+    "HMC8043": PowerSupplyHMC804x,
+    "LowNoise": PowerSupplyLowNoise
 }
 
 available_multimeters = {
@@ -98,7 +100,7 @@ class Application(QWidget):
 
         self.setWindowTitle("Measure it")
         self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QLabel, QPushButton, QComboBox, QTabWidget, "
-                                                                "QDoubleSpinBox, QLineEdit"
+                                                                "QDoubleSpinBox, QLineEdit, QSpinBox"
                                                                 "{font-size: 11pt;"
                                                                 "font-weight: 500;"
                                                                 "font-family: Arial;}" +
@@ -240,6 +242,82 @@ class Application(QWidget):
             else:
                 print("write success")
 
+    def add_LowNoise_tab(self):
+        self.power_supply_tab = QWidget()
+        self.power_supply_tab.setAttribute(Qt.WA_DeleteOnClose)
+        device_tab_layout = QGridLayout()
+
+        device_box = QGroupBox("Channel options")
+        device_box_layout = QGridLayout()
+
+        # first_fuse_switch.stateChanged.connect(
+        #     lambda: self.change_fuse_state(first_fuse_switch.checkState(), "OUT1", channel_box.currentText()))
+        # fuse_state_box_layout.addWidget(first_fuse_switch, 0, 2)
+
+        channel_state_box = QGroupBox("State")
+        channel_state_box_layout = QGridLayout()
+        channel_state_box_layout.addWidget(QLabel("Channel 1"), 0, 0)
+        first_channel_state = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                            animation_duration=100, checked=False, change_cursor=True)
+        first_channel_state.stateChanged.connect(lambda: self.change_channel_state(first_channel_state.checkState(), 1))
+        channel_state_box_layout.addWidget(first_channel_state, 0, 1)
+        channel_state_box_layout.addWidget(QLabel("Channel 2"), 1, 0)
+        second_channel_state = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                             animation_duration=100, checked=False, change_cursor=True)
+        second_channel_state.stateChanged.connect(lambda: self.change_channel_state(second_channel_state.checkState(), 2))
+        channel_state_box_layout.addWidget(second_channel_state, 1, 1)
+        channel_state_box_layout.addWidget(QLabel("Channel 3"), 2, 0)
+        third_channel_state = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                            animation_duration=100, checked=False, change_cursor=True)
+        third_channel_state.stateChanged.connect(lambda: self.change_channel_state(third_channel_state.checkState(), 3))
+        channel_state_box_layout.addWidget(third_channel_state, 2, 1)
+        channel_state_box_layout.addWidget(QLabel("Channel 4"), 3, 0)
+        fourth_channel_state = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
+                                             animation_duration=100, checked=False, change_cursor=True)
+        fourth_channel_state.stateChanged.connect(lambda: self.change_channel_state(fourth_channel_state.checkState(), 4))
+        channel_state_box_layout.addWidget(fourth_channel_state, 3, 1)
+        channel_state_box.setLayout(channel_state_box_layout)
+        device_box_layout.addWidget(channel_state_box, 0, 0)
+
+        channel_voltage_box = QGroupBox("Voltage level")
+        channel_voltage_box_layout = QGridLayout()
+        first_channel_voltage = QSpinBox()
+        first_channel_voltage.setSuffix(" mV")
+        first_channel_voltage.setMaximum(10000)
+        first_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(1, self.sender().value()))
+        channel_voltage_box_layout.addWidget(first_channel_voltage, 0, 0)
+        second_channel_voltage = QSpinBox()
+        second_channel_voltage.setSuffix(" mV")
+        second_channel_voltage.setMaximum(10000)
+        second_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(2, self.sender().value()))
+        channel_voltage_box_layout.addWidget(second_channel_voltage, 1, 0)
+        third_channel_voltage = QSpinBox()
+        third_channel_voltage.setSuffix(" mV")
+        third_channel_voltage.setMaximum(10000)
+        third_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(3, self.sender().value()))
+        channel_voltage_box_layout.addWidget(third_channel_voltage, 2, 0)
+        fourth_channel_voltage = QSpinBox()
+        fourth_channel_voltage.setSuffix(" mV")
+        fourth_channel_voltage.setMaximum(10000)
+        fourth_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(4, self.sender().value()))
+        channel_voltage_box_layout.addWidget(fourth_channel_voltage, 3, 0)
+        channel_voltage_box.setLayout(channel_voltage_box_layout)
+        device_box_layout.addWidget(channel_voltage_box, 0, 1)
+
+        device_box.setLayout(device_box_layout)
+        device_tab_layout.addWidget(device_box, 0, 0)
+
+        self.switch_tab_bar()
+
+        self.power_supply_tab.setLayout(device_tab_layout)
+        self.tab_bar.addTab(self.power_supply_tab, "LowNoise")
+
+    def change_channel_state(self, state, channel):
+        if state == Qt.Checked:
+            self.power_supply.set_channel_state(channel, 'e')
+        elif state == Qt.Unchecked:
+            self.power_supply.set_channel_state(channel, 'd')
+
     def add_HMC8043_tab(self):
         self.power_supply_tab = QWidget()
         self.power_supply_tab.setAttribute(Qt.WA_DeleteOnClose)
@@ -254,6 +332,9 @@ class Application(QWidget):
         common_command_box.setLayout(common_command_box_layout)
         device_tab_layout.addWidget(common_command_box, 0, 0, 1, 2)
 
+        output_settings_box = QGroupBox("Output options")
+        output_settings_box_layout = QGridLayout()
+
         channel_settings_box = QGroupBox("Channel options")
         channel_settings_box_layout = QGridLayout()
         channel_settings_box_layout.addWidget(QLabel("Selected channel:"), 0, 0)
@@ -261,10 +342,44 @@ class Application(QWidget):
         channel_box.addItems(["OUT3", "OUT2", "OUT1"])
         channel_box.currentIndexChanged.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         channel_box.setCurrentIndex(2)
-        channel_settings_box_layout.addWidget(channel_box, 0, 1)
+        channel_settings_box_layout.addWidget(channel_box, 0, 1, 1, 2)
 
+        channel_state = QPushButton("State")
+        channel_state.clicked.connect(lambda: self.send_command(lambda: self.power_supply.get_output_channel_state()))
+        channel_settings_box_layout.addWidget(channel_state, 1, 0)
+        channel_activation = QPushButton("Activate")
+        channel_activation.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.set_output_channel_state(1, channel_box.currentText())))
+        channel_settings_box_layout.addWidget(channel_activation, 1, 1)
+        channel_deactivation = QPushButton("Deactivate")
+        channel_deactivation.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.set_output_channel_state(0, channel_box.currentText())))
+        channel_settings_box_layout.addWidget(channel_deactivation, 1, 2)
         channel_settings_box.setLayout(channel_settings_box_layout)
-        device_tab_layout.addWidget(channel_settings_box, 1, 0, 1, 2)
+        output_settings_box_layout.addWidget(channel_settings_box, 0, 0)
+
+        master_settings_box = QGroupBox("Master options")
+        master_settings_box_layout = QGridLayout()
+        master_label = QLabel("Master output:")
+        master_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        master_settings_box_layout.addWidget(master_label, 0, 0)
+        master_state = QPushButton("State")
+        master_state.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.get_output_master_state()))
+        master_settings_box_layout.addWidget(master_state, 0, 1)
+        master_activation = QPushButton("Activate")
+        master_activation.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.set_output_master_state(1, channel_box.currentText())))
+        master_settings_box_layout.addWidget(master_activation, 1, 0)
+        master_deactivation = QPushButton("Deactivate")
+        master_deactivation.clicked.connect(lambda: self.send_command(
+            lambda: self.power_supply.set_output_master_state(0, channel_box.currentText())))
+        master_settings_box_layout.addWidget(master_deactivation, 1, 1)
+        master_settings_box.setLayout(master_settings_box_layout)
+        output_settings_box_layout.addWidget(master_settings_box, 1, 0)
+
+        output_settings_box.setLayout(output_settings_box_layout)
+        device_tab_layout.addWidget(output_settings_box, 3, 0, 2, 2)
 
         fuse_options_box = QGroupBox("Fuse options")
         fuse_options_box_layout = QGridLayout()
@@ -348,7 +463,7 @@ class Application(QWidget):
         fuse_options_box_layout.addWidget(fuse_linking_box, 1, 0)
 
         fuse_options_box.setLayout(fuse_options_box_layout)
-        device_tab_layout.addWidget(fuse_options_box, 3, 0, 1, 2)
+        device_tab_layout.addWidget(fuse_options_box, 1, 4, 2, 2)
 
         measurement_options_box = QGroupBox("Measurement options")
         measurement_options_box_layout = QGridLayout()
@@ -596,7 +711,8 @@ class Application(QWidget):
         first_channel_ovp_mode.addItem("Measured", "MEAS")
         first_channel_ovp_mode.addItem("Protected", "PROT")
         first_channel_ovp_mode.setCurrentIndex(-1)
-        first_channel_ovp_mode.currentIndexChanged.connect(lambda: self.change_ovp_mode("OUT1", channel_box.currentText()))
+        first_channel_ovp_mode.currentIndexChanged.connect(
+            lambda: self.change_ovp_mode("OUT1", channel_box.currentText()))
         ovp_layout.addWidget(first_channel_ovp_mode, 0, 3)
         first_ovp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                          animation_duration=100, checked=False, change_cursor=True)
@@ -630,7 +746,8 @@ class Application(QWidget):
         second_channel_ovp_mode.addItem("Measured", "MEAS")
         second_channel_ovp_mode.addItem("Protected", "PROT")
         second_channel_ovp_mode.setCurrentIndex(-1)
-        second_channel_ovp_mode.currentIndexChanged.connect(lambda: self.change_ovp_mode("OUT2", channel_box.currentText()))
+        second_channel_ovp_mode.currentIndexChanged.connect(
+            lambda: self.change_ovp_mode("OUT2", channel_box.currentText()))
         ovp_layout.addWidget(second_channel_ovp_mode, 1, 3)
         second_ovp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                           animation_duration=100, checked=False, change_cursor=True)
@@ -664,7 +781,8 @@ class Application(QWidget):
         third_channel_ovp_mode.addItem("Measured", "MEAS")
         third_channel_ovp_mode.addItem("Protected", "PROT")
         third_channel_ovp_mode.setCurrentIndex(-1)
-        third_channel_ovp_mode.currentIndexChanged.connect(lambda: self.change_ovp_mode("OUT3", channel_box.currentText()))
+        third_channel_ovp_mode.currentIndexChanged.connect(
+            lambda: self.change_ovp_mode("OUT3", channel_box.currentText()))
         ovp_layout.addWidget(third_channel_ovp_mode, 2, 3)
         third_ovp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                          animation_duration=100, checked=False, change_cursor=True)
@@ -790,7 +908,8 @@ class Application(QWidget):
         first_channel_energy_meter_reset.setText("Reset")
         first_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
             lambda: self.power_supply.measure_scalar_energy_reset("OUT1")))
-        first_channel_energy_meter_reset.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        first_channel_energy_meter_reset.clicked.connect(
+            lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         energy_meter_layout.addWidget(first_channel_energy_meter_reset, 0, 2)
 
         energy_meter_layout.addWidget(QLabel("Channel 2 energy meter:"), 1, 0)
@@ -804,7 +923,8 @@ class Application(QWidget):
         second_channel_energy_meter_reset.setText("Reset")
         second_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
             lambda: self.power_supply.measure_scalar_energy_reset("OUT2")))
-        second_channel_energy_meter_reset.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        second_channel_energy_meter_reset.clicked.connect(
+            lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         energy_meter_layout.addWidget(second_channel_energy_meter_reset, 1, 2)
 
         energy_meter_layout.addWidget(QLabel("Channel 3 energy meter:"), 2, 0)
@@ -818,7 +938,8 @@ class Application(QWidget):
         third_channel_energy_meter_reset.setText("Reset")
         third_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
             lambda: self.power_supply.measure_scalar_energy_reset("OUT3")))
-        third_channel_energy_meter_reset.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
+        third_channel_energy_meter_reset.clicked.connect(
+            lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         energy_meter_layout.addWidget(third_channel_energy_meter_reset, 2, 2)
 
         energy_meter_box.setLayout(energy_meter_layout)
@@ -1178,7 +1299,8 @@ class Application(QWidget):
     def get_device_options(self):
         devices = {
             "HMC8012": "01234",
-            "HMC8043": "56789"
+            "HMC8043": "56789",
+            "LowNoise": "94897"
         }
         # rm = pyvisa.ResourceManager()
         # resources = rm.list_resources()
