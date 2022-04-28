@@ -12,6 +12,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         # INSTrument[:SELect] {OUTPut1 | OUTPut2 | OUTPut3 | OUT1 | OUT2 | OUT3}
         # Selects a channel
         self.manager.write("INST " + str(parameter))
+        # print("INST " + str(parameter))
 
     @exception_handler
     def get_output_channel(self):

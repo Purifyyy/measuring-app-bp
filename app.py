@@ -88,6 +88,8 @@ class Application(QWidget):
         self.is_power_supply_connected = False
         self.multimeter = None
         self.is_multimeter_connected = False
+        self.characteristics_button = None
+        self.is_measurement_opened = False
 
         self.device_options = self.get_device_options()
 
@@ -150,6 +152,13 @@ class Application(QWidget):
         self.multimeter_button.clicked.connect(self.connect_multimeter)
         device_layout.addWidget(self.multimeter_button, 1, 2)
 
+        device_layout.addWidget(QLabel("Characteristic measurement"), 2, 0, 1, 2)
+
+        self.characteristics_button = QPushButton()
+        self.characteristics_button.setText("Open")
+        self.characteristics_button.clicked.connect(self.add_measurement_tab)
+        device_layout.addWidget(self.characteristics_button, 2, 2)
+
         device_box.setLayout(device_layout)
         return device_box
 
@@ -175,7 +184,7 @@ class Application(QWidget):
             else:
                 self.handle_error("No such power supply available!")
         else:
-            del self.power_supply
+            self.power_supply.close()
             self.power_supply = None
             self.is_power_supply_connected = False
             self.powersupply_button.setText("Connect")
@@ -200,7 +209,7 @@ class Application(QWidget):
             else:
                 self.handle_error("No such multimeter available!")
         else:
-            del self.multimeter
+            self.multimeter.close()
             self.multimeter = None
             self.is_multimeter_connected = False
             self.multimeter_button.setText("Connect")
@@ -208,6 +217,41 @@ class Application(QWidget):
             self.multimeter_tab.close()
             self.multimeter_menu.setDisabled(False)
             self.switch_tab_bar()
+
+    def add_measurement_tab(self):
+        if self.is_measurement_opened is False:
+            if not self.is_power_supply_connected:
+                multimeter_address = self.device_options.get("HMC8043")
+                if multimeter_address is None:
+                    self.handle_error("Multimeter not available!")
+                if not self.is_multimeter_connected:
+                    powersupply_address = self.device_options.get("HMC8012")
+                    if powersupply_address is None:
+                        self.handle_error("Power supply not available!")
+                    self.power_supply = available_power_supplies["HMC8043"](powersupply_address)
+                    self.multimeter = available_multimeters["HMC8012"](multimeter_address)
+
+                # self.multimeter = available_power_supplies["HMC8043"](address)
+
+        #         if address is not None:
+        #             print("pripajam " + device_chosen + " na adrese " + address)
+        #             self.multimeter = available_multimeters[device_chosen](address)
+        #             self.add_device_tab(device_chosen)
+        #             self.is_multimeter_connected = True
+        #             self.multimeter_button.setText("Disconnect")
+        #             self.multimeter_menu.setDisabled(True)
+        #             self.switch_tab_bar()
+        #     else:
+        #         self.handle_error("No such multimeter available!")
+        # else:
+        #     del self.multimeter
+        #     self.multimeter = None
+        #     self.is_multimeter_connected = False
+        #     self.multimeter_button.setText("Connect")
+        #     self.tab_bar.removeTab(self.tab_bar.indexOf(self.multimeter_tab))
+        #     self.multimeter_tab.close()
+        #     self.multimeter_menu.setDisabled(False)
+        #     self.switch_tab_bar()
 
     def switch_tab_bar(self):
         if self.tab_bar.isHidden():
@@ -283,22 +327,22 @@ class Application(QWidget):
         channel_voltage_box_layout = QGridLayout()
         first_channel_voltage = QSpinBox()
         first_channel_voltage.setSuffix(" mV")
-        first_channel_voltage.setMaximum(10000)
+        first_channel_voltage.setMaximum(3500)
         first_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(1, self.sender().value()))
         channel_voltage_box_layout.addWidget(first_channel_voltage, 0, 0)
         second_channel_voltage = QSpinBox()
         second_channel_voltage.setSuffix(" mV")
-        second_channel_voltage.setMaximum(10000)
+        second_channel_voltage.setMaximum(3500)
         second_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(2, self.sender().value()))
         channel_voltage_box_layout.addWidget(second_channel_voltage, 1, 0)
         third_channel_voltage = QSpinBox()
         third_channel_voltage.setSuffix(" mV")
-        third_channel_voltage.setMaximum(10000)
+        third_channel_voltage.setMaximum(3500)
         third_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(3, self.sender().value()))
         channel_voltage_box_layout.addWidget(third_channel_voltage, 2, 0)
         fourth_channel_voltage = QSpinBox()
         fourth_channel_voltage.setSuffix(" mV")
-        fourth_channel_voltage.setMaximum(10000)
+        fourth_channel_voltage.setMaximum(3500)
         fourth_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(4, self.sender().value()))
         channel_voltage_box_layout.addWidget(fourth_channel_voltage, 3, 0)
         channel_voltage_box.setLayout(channel_voltage_box_layout)
@@ -487,20 +531,20 @@ class Application(QWidget):
 
         ainput_box = QGroupBox("Analog In options")
         ainput_layout = QGridLayout()
-        input_unit_label = QLabel("Input unit:")
-        input_unit_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        input_unit_label = QLabel("In unit:")
+        # input_unit_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         ainput_layout.addWidget(input_unit_label, 0, 0)
         ainput_unit = QComboBox()
         ainput_unit.addItem("Voltage", "VOLT")
         ainput_unit.addItem("Current", "CURR")
         ainput_layout.addWidget(ainput_unit, 0, 1)
-        input_mode_label = QLabel("Input mode:")
+        input_mode_label = QLabel("In mode:")
         ainput_layout.addWidget(input_mode_label, 0, 2)
         ainput_mode = QComboBox()
         ainput_mode.addItem("Linear", "LIN")
         ainput_mode.addItem("Step", "STEP")
         ainput_layout.addWidget(ainput_mode, 0, 4)
-        ainput_layout.addWidget(QLabel("Channel 1"), 1, 0)
+        ainput_layout.addWidget(QLabel("CH1:"), 1, 0)
         first_channel_ainput_state = ButtonWithSwitch()
         first_channel_ainput_state.setText("Activate")
         ainput_layout.addWidget(first_channel_ainput_state, 1, 1, 1, 4)
@@ -508,7 +552,7 @@ class Application(QWidget):
             ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
             "OUT1", channel_box.currentText())))
 
-        ainput_layout.addWidget(QLabel("Channel 2"), 2, 0)
+        ainput_layout.addWidget(QLabel("CH2:"), 2, 0)
         second_channel_ainput_state = ButtonWithSwitch()
         second_channel_ainput_state.setText("Activate")
         ainput_layout.addWidget(second_channel_ainput_state, 2, 1, 1, 4)
@@ -516,7 +560,7 @@ class Application(QWidget):
             ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
             "OUT2", channel_box.currentText())))
 
-        ainput_layout.addWidget(QLabel("Channel 3"), 3, 0)
+        ainput_layout.addWidget(QLabel("CH3:"), 3, 0)
         third_channel_ainput_state = ButtonWithSwitch()
         third_channel_ainput_state.setText("Activate")
         ainput_layout.addWidget(third_channel_ainput_state, 3, 1, 1, 4)
@@ -560,7 +604,7 @@ class Application(QWidget):
         ainput_ramp_layout.addWidget(easyramp_box, 0, 1)
 
         ainput_ramp_box.setLayout(ainput_ramp_layout)
-        device_tab_layout.addWidget(ainput_ramp_box, 0, 2, 1, 2)
+        device_tab_layout.addWidget(ainput_ramp_box, 0, 2, 2, 2)
 
         voltage_box = QGroupBox("Voltage options")
         voltage_layout = QGridLayout()
@@ -624,7 +668,7 @@ class Application(QWidget):
         channel_voltage_step.stepChanged.connect(self.volt_step_changed)
         voltage_layout.addWidget(channel_voltage_step, 0, 4, 3, 1)
         voltage_box.setLayout(voltage_layout)
-        device_tab_layout.addWidget(voltage_box, 1, 2, 1, 2)
+        device_tab_layout.addWidget(voltage_box, 3, 4, 1, 2)
 
         current_box = QGroupBox("Current options")
         current_layout = QGridLayout()
@@ -691,13 +735,13 @@ class Application(QWidget):
         channel_current_step.stepChanged.connect(self.curr_step_changed)
         current_layout.addWidget(channel_current_step, 0, 4, 3, 1)
         current_box.setLayout(current_layout)
-        device_tab_layout.addWidget(current_box, 2, 2, 1, 2)
+        device_tab_layout.addWidget(current_box, 4, 4, 1, 2)
 
         protection_options_box = QGroupBox("Protection options")
         protection_options_box_layout = QGridLayout()
         ovp_box = QGroupBox("OVP settings")
         ovp_layout = QGridLayout()
-        ovp_layout.addWidget(QLabel("Channel 1    OVP value:"), 0, 0)
+        ovp_layout.addWidget(QLabel("CH1 OVP value:"), 0, 0)
         first_channel_ovp_value = QDoubleSpinBox()
         first_channel_ovp_value.setValue(3.2050E+01)
         first_channel_ovp_value.setRange(0, 3.2050E+01)
@@ -732,7 +776,7 @@ class Application(QWidget):
         first_ovp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         ovp_layout.addWidget(first_ovp_clear_button, 0, 6)
 
-        ovp_layout.addWidget(QLabel("Channel 2    OVP value:"), 1, 0)
+        ovp_layout.addWidget(QLabel("CH2 OVP value:"), 1, 0)
         second_channel_ovp_value = QDoubleSpinBox()
         second_channel_ovp_value.setValue(3.2050E+01)
         second_channel_ovp_value.setRange(0, 3.2050E+01)
@@ -767,7 +811,7 @@ class Application(QWidget):
         second_ovp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         ovp_layout.addWidget(second_ovp_clear_button, 1, 6)
 
-        ovp_layout.addWidget(QLabel("Channel 3    OVP value:"), 2, 0)
+        ovp_layout.addWidget(QLabel("CH3 OVP value:"), 2, 0)
         third_channel_ovp_value = QDoubleSpinBox()
         third_channel_ovp_value.setValue(3.2050E+01)
         third_channel_ovp_value.setRange(0, 3.2050E+01)
@@ -806,7 +850,7 @@ class Application(QWidget):
 
         opp_box = QGroupBox("OPP settings")
         opp_layout = QGridLayout()
-        opp_layout.addWidget(QLabel("Channel 1    OPP value:"), 0, 0)
+        opp_layout.addWidget(QLabel("CH1 OPP value:"), 0, 0)
         first_channel_opp_value = QDoubleSpinBox()
         first_channel_opp_value.setValue(3.300E+01)
         first_channel_opp_value.setRange(0, 3.300E+01)
@@ -833,7 +877,7 @@ class Application(QWidget):
         first_opp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         opp_layout.addWidget(first_opp_clear_button, 0, 4)
 
-        opp_layout.addWidget(QLabel("Channel 2    OPP value:"), 1, 0)
+        opp_layout.addWidget(QLabel("CH2 OPP value:"), 1, 0)
         second_channel_opp_value = QDoubleSpinBox()
         second_channel_opp_value.setValue(3.300E+01)
         second_channel_opp_value.setRange(0, 3.300E+01)
@@ -860,7 +904,7 @@ class Application(QWidget):
         second_opp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         opp_layout.addWidget(second_opp_clear_button, 1, 4)
 
-        opp_layout.addWidget(QLabel("Channel 3    OPP value:"), 2, 0)
+        opp_layout.addWidget(QLabel("CH3 OPP value:"), 2, 0)
         third_channel_opp_value = QDoubleSpinBox()
         third_channel_opp_value.setValue(3.300E+01)
         third_channel_opp_value.setRange(0, 3.300E+01)
@@ -892,7 +936,7 @@ class Application(QWidget):
         protection_options_box_layout.addWidget(ovp_box, 0, 0)
         protection_options_box_layout.addWidget(opp_box, 1, 0)
         protection_options_box.setLayout(protection_options_box_layout)
-        device_tab_layout.addWidget(protection_options_box, 3, 2, 1, 2)
+        device_tab_layout.addWidget(protection_options_box, 3, 2, 2, 2)
 
         energy_meter_box = QGroupBox("Energy meter options")
         energy_meter_layout = QGridLayout()
@@ -1164,9 +1208,8 @@ class Application(QWidget):
         measurement_function.addItem("AC V", self.multimeter.measure_voltage_ac)
         measurement_function.addItem("DC I", self.multimeter.measure_current_dc)
         measurement_function.addItem("AC I", self.multimeter.measure_current_ac)
-        measurement_function.addItem("Ω", self.multimeter.measure_continuity)
+        measurement_function.addItem("Continuity", self.multimeter.measure_continuity)
         measurement_function.addItem("CAP", self.multimeter.measure_capacitance)
-        # measurement_function.addItem("SENSOR", )                                                      <TODO>
         measurement_function.addItem("Frequency (AC I)", self.multimeter.measure_frequency_current)
         measurement_function.addItem("Frequency (AC V)", self.multimeter.measure_frequency_voltage)
         measurement_function.addItem("Resistance (2-wire)", self.multimeter.measure_resistance)
@@ -1298,15 +1341,19 @@ class Application(QWidget):
 
     def get_device_options(self):
         devices = {
-            "HMC8012": "01234",
-            "HMC8043": "56789",
-            "LowNoise": "94897"
+            "HMC8012": "8012",
+            "HMC8043": "8043",
+            "LowNoise": "COM5"
         }
-        # rm = pyvisa.ResourceManager()
+        # rm = pyvisa.ResourceManager('@py')
         # resources = rm.list_resources()
         # for res in resources:
-        #     inst = rm.open_resource(res)
-        #     devices[((inst.query("*IDN?")).split(","))[1]] = res
-        #     inst.close()
+            # if res != "ASRL5::INSTR":
+                # inst = rm.open_resource(res)
+                # idn = inst.query("*IDN?").split(",")[1]
+                # devices[idn] = res
+                # inst.close()
         # rm.close()
         return devices
+
+# devices[((inst.query("*IDN?")).split(","))[1]] = res

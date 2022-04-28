@@ -1,5 +1,6 @@
 import serial
 from serial import *
+import time
 
 
 class PowerSupplyLowNoise:
@@ -33,6 +34,7 @@ class PowerSupplyLowNoise:
         """Write"""
         # ch<n>s<voltage>
         # Sets the voltage value of channel with corresponding number (n)
-        #  <voltage> 0.000V to XX.XXXV (adjustable in 1mV steps) <-------------------------------- MAX?
-        inst = "ch" + str(channel) + "s" + str(voltage)
+        #  <voltage> 0.0V to 3.5V (adjustable in 1mV steps)
+        inst = "ch" + str(channel) + "s" + str(voltage) + "\r"
         self.ser.write(inst.encode())
+
