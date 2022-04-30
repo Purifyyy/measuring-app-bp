@@ -1,8 +1,12 @@
-import pyvisa
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import qdarkstyle
 from QSwitchControl import SwitchControl
+import time
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import csv
+from datetime import datetime
 
 from multimeter_HMC8012 import DigitalMultimeterHMC8012
 from powersupply_HMC804x import PowerSupplyHMC804x
@@ -82,14 +86,20 @@ class ButtonWithSwitch(QPushButton):
 class Application(QWidget):
     def __init__(self):
         super().__init__(parent=None)
+        self.measuring_loop = None
         self.power_supply_tab = None
         self.multimeter_tab = None
+        self.measurement_tab = None
         self.power_supply = None
         self.is_power_supply_connected = False
         self.multimeter = None
         self.is_multimeter_connected = False
         self.characteristics_button = None
         self.is_measurement_opened = False
+        self.measured_multimeter = None
+        self.measured_power_supply = None
+        self.file_writer = None
+        self.output_file = None
 
         self.device_options = self.get_device_options()
 
@@ -220,38 +230,143 @@ class Application(QWidget):
 
     def add_measurement_tab(self):
         if self.is_measurement_opened is False:
-            if not self.is_power_supply_connected:
-                multimeter_address = self.device_options.get("HMC8043")
-                if multimeter_address is None:
-                    self.handle_error("Multimeter not available!")
-                if not self.is_multimeter_connected:
-                    powersupply_address = self.device_options.get("HMC8012")
-                    if powersupply_address is None:
-                        self.handle_error("Power supply not available!")
-                    self.power_supply = available_power_supplies["HMC8043"](powersupply_address)
-                    self.multimeter = available_multimeters["HMC8012"](multimeter_address)
+            multimeter_address = self.device_options.get("HMC8012")
+            if multimeter_address is None:
+                self.handle_error("Multimeter not available!")
+                return
+            powersupply_address = self.device_options.get("HMC8043")
+            if powersupply_address is None:
+                self.handle_error("Power supply not available!")
+                return
+            self.measured_multimeter = available_multimeters["HMC8012"](multimeter_address)
+            self.measured_power_supply = available_power_supplies["HMC8043"](powersupply_address)
 
-                # self.multimeter = available_power_supplies["HMC8043"](address)
+            self.characteristics_button.setText("Close")
+            self.measurement_tab = QWidget()
+            self.measurement_tab.setAttribute(Qt.WA_DeleteOnClose)
+            measurement_tab_layout = QGridLayout()
 
-        #         if address is not None:
-        #             print("pripajam " + device_chosen + " na adrese " + address)
-        #             self.multimeter = available_multimeters[device_chosen](address)
-        #             self.add_device_tab(device_chosen)
-        #             self.is_multimeter_connected = True
-        #             self.multimeter_button.setText("Disconnect")
-        #             self.multimeter_menu.setDisabled(True)
-        #             self.switch_tab_bar()
-        #     else:
-        #         self.handle_error("No such multimeter available!")
-        # else:
-        #     del self.multimeter
-        #     self.multimeter = None
-        #     self.is_multimeter_connected = False
-        #     self.multimeter_button.setText("Connect")
-        #     self.tab_bar.removeTab(self.tab_bar.indexOf(self.multimeter_tab))
-        #     self.multimeter_tab.close()
-        #     self.multimeter_menu.setDisabled(False)
-        #     self.switch_tab_bar()
+            measurement_box = QGroupBox("Measurement")
+            measurement_box_layout = QGridLayout()
+            channel_menu = QComboBox()
+            channel_menu_options = ["Channel 1", "Channel 2", "Channel 3"]
+            channel_menu.addItems(channel_menu_options)
+            channel_menu.setItemData(0, "OUT1")
+            channel_menu.setItemData(1, "OUT2")
+            channel_menu.setItemData(2, "OUT3")
+            measurement_box_layout.addWidget(channel_menu, 0, 0)
+
+            measurement_box_layout.addWidget(QLabel("Voltage"), 1, 0)
+            measurement_box_layout.addWidget(QLabel("From"), 1, 1)
+            voltage_from_input = QDoubleSpinBox()
+            voltage_from_input.setSuffix(" V")
+            voltage_from_input.setMaximum(3.2050E+01)
+            voltage_from_input.setDecimals(3)
+            measurement_box_layout.addWidget(voltage_from_input, 1, 2)
+            measurement_box_layout.addWidget(QLabel("To"), 1, 3)
+            voltage_to_input = QDoubleSpinBox()
+            voltage_to_input.setSuffix(" V")
+            voltage_to_input.setMaximum(3.2050E+01)
+            voltage_to_input.setDecimals(3)
+            measurement_box_layout.addWidget(voltage_to_input, 1, 4)
+
+            measurement_box_layout.addWidget(QLabel("Step"), 2, 0)
+            step_input = QDoubleSpinBox()
+            step_input.setSuffix(" V")
+            step_input.setMaximum(3.2050E+01)
+            step_input.setDecimals(3)
+            measurement_box_layout.addWidget(step_input, 2, 2)
+            measurement_box.setLayout(measurement_box_layout)
+            measurement_tab_layout.addWidget(measurement_box, 0, 0, 1, 5)
+
+            measurement_tab_layout.addWidget(QLabel("Time delay"), 1, 0)
+            time_delay_input = QDoubleSpinBox()
+            time_delay_input.setMinimum(1.2)
+            time_delay_input.setSuffix(" s")
+            measurement_tab_layout.addWidget(time_delay_input, 1, 1)
+
+            start_button = QPushButton("Start")
+            start_button.clicked.connect(lambda: self.measure_characteristic(channel_menu.currentData(),
+                                                                             voltage_from_input.value(),
+                                                                             voltage_to_input.value(),
+                                                                             step_input.value(),
+                                                                             time_delay_input.value()))
+            measurement_tab_layout.addWidget(start_button, 1, 3)
+
+            start_button = QPushButton("Stop")
+            start_button.clicked.connect(lambda: self.finish_measure_characteristic())
+            measurement_tab_layout.addWidget(start_button, 1, 4)
+
+            self.measurement_tab.setLayout(measurement_tab_layout)
+            self.tab_bar.addTab(self.measurement_tab, "Characteristic measurement")
+            self.is_measurement_opened = True
+        else:
+            self.measured_multimeter.close()
+            self.measured_power_supply.close()
+            self.measured_multimeter = None
+            self.measured_power_supply = None
+            self.characteristics_button.setText("Open")
+            self.tab_bar.removeTab(self.tab_bar.indexOf(self.measurement_tab))
+            self.measurement_tab.close()
+            self.is_measurement_opened = False
+        self.switch_tab_bar()
+
+    def finish_measure_characteristic(self):
+        if self.measuring_loop is not None:
+            if self.measuring_loop.event_source is not None:
+                self.measuring_loop.event_source.stop()
+                self.measuring_loop = None
+                self.measured_power_supply.set_output_channel_state(0, "OUT1")
+                self.measured_power_supply.set_output_channel_state(0, "OUT2")
+                self.measured_power_supply.set_output_channel_state(0, "OUT3")
+                if self.output_file:
+                    if not self.output_file.closed:
+                        self.output_file.close()
+
+    def animate_plot(self, i, xs, ys, voltage_list, delay, channel, previous_channel):
+        self.measured_power_supply.set_source_voltage_level_immediate_amplitude(voltage_list[i], channel)
+        time.sleep(delay)
+        measured_value = float(self.measured_multimeter.measure_current_ac()[2])
+
+        xs.append(voltage_list[i])
+        ys.append(measured_value)
+
+        self.file_writer.writerow([voltage_list[i], measured_value])
+
+        plt.cla()
+        plt.plot(xs, ys)
+
+        # plt.title('')
+        plt.ylabel('Current (A)')
+        plt.xlabel('Voltage (V)')
+        if len(voltage_list) == (i+1):
+            self.output_file.close()
+            self.measured_power_supply.set_output_channel_state(0, channel)
+            self.measured_power_supply.set_output_channel(previous_channel)
+            self.measuring_loop = None
+
+    def measure_characteristic(self, channel, voltage_from, voltage_to, step, delay):
+        if step == 0:
+            return
+        previous_channel = self.measured_power_supply.get_output_channel()[2]
+        self.measured_power_supply.set_output_channel_state(1, channel)
+        frame_count = int((voltage_to * 1000 - voltage_from * 1000) / (step * 1000)) + 1
+        current_voltage = voltage_from
+        voltage_list = []
+        for x in range(frame_count):
+            voltage_list.append(round(current_voltage, 3))
+            current_voltage += step
+        plt.ion()
+        fig = plt.figure()
+        xs = []
+        ys = []
+        self.output_file = open('../measurement_from_'+datetime.now().strftime("%d.%m.%Y-%H.%M.%S")+'.csv', 'a',
+                                newline='')
+        self.file_writer = csv.writer(self.output_file)
+        # interval=1000 * delay
+        self.measuring_loop = FuncAnimation(fig, fargs=(xs, ys, voltage_list, delay, channel, previous_channel),
+                                            init_func=lambda: None, repeat=False, blit=False, frames=frame_count,
+                                            func=self.animate_plot)
 
     def switch_tab_bar(self):
         if self.tab_bar.isHidden():
@@ -308,7 +423,8 @@ class Application(QWidget):
         channel_state_box_layout.addWidget(QLabel("Channel 2"), 1, 0)
         second_channel_state = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                              animation_duration=100, checked=False, change_cursor=True)
-        second_channel_state.stateChanged.connect(lambda: self.change_channel_state(second_channel_state.checkState(), 2))
+        second_channel_state.stateChanged.connect(
+            lambda: self.change_channel_state(second_channel_state.checkState(), 2))
         channel_state_box_layout.addWidget(second_channel_state, 1, 1)
         channel_state_box_layout.addWidget(QLabel("Channel 3"), 2, 0)
         third_channel_state = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
@@ -318,7 +434,8 @@ class Application(QWidget):
         channel_state_box_layout.addWidget(QLabel("Channel 4"), 3, 0)
         fourth_channel_state = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                              animation_duration=100, checked=False, change_cursor=True)
-        fourth_channel_state.stateChanged.connect(lambda: self.change_channel_state(fourth_channel_state.checkState(), 4))
+        fourth_channel_state.stateChanged.connect(
+            lambda: self.change_channel_state(fourth_channel_state.checkState(), 4))
         channel_state_box_layout.addWidget(fourth_channel_state, 3, 1)
         channel_state_box.setLayout(channel_state_box_layout)
         device_box_layout.addWidget(channel_state_box, 0, 0)
@@ -328,22 +445,26 @@ class Application(QWidget):
         first_channel_voltage = QSpinBox()
         first_channel_voltage.setSuffix(" mV")
         first_channel_voltage.setMaximum(3500)
-        first_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(1, self.sender().value()))
+        first_channel_voltage.editingFinished.connect(
+            lambda: self.power_supply.set_voltage_level(1, self.sender().value()))
         channel_voltage_box_layout.addWidget(first_channel_voltage, 0, 0)
         second_channel_voltage = QSpinBox()
         second_channel_voltage.setSuffix(" mV")
         second_channel_voltage.setMaximum(3500)
-        second_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(2, self.sender().value()))
+        second_channel_voltage.editingFinished.connect(
+            lambda: self.power_supply.set_voltage_level(2, self.sender().value()))
         channel_voltage_box_layout.addWidget(second_channel_voltage, 1, 0)
         third_channel_voltage = QSpinBox()
         third_channel_voltage.setSuffix(" mV")
         third_channel_voltage.setMaximum(3500)
-        third_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(3, self.sender().value()))
+        third_channel_voltage.editingFinished.connect(
+            lambda: self.power_supply.set_voltage_level(3, self.sender().value()))
         channel_voltage_box_layout.addWidget(third_channel_voltage, 2, 0)
         fourth_channel_voltage = QSpinBox()
         fourth_channel_voltage.setSuffix(" mV")
         fourth_channel_voltage.setMaximum(3500)
-        fourth_channel_voltage.editingFinished.connect(lambda: self.power_supply.set_voltage_level(4, self.sender().value()))
+        fourth_channel_voltage.editingFinished.connect(
+            lambda: self.power_supply.set_voltage_level(4, self.sender().value()))
         channel_voltage_box_layout.addWidget(fourth_channel_voltage, 3, 0)
         channel_voltage_box.setLayout(channel_voltage_box_layout)
         device_box_layout.addWidget(channel_voltage_box, 0, 1)

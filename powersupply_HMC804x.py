@@ -6,6 +6,14 @@ class PowerSupplyHMC804x(InstrumentDriver):
     def __init__(self, address):
         super(PowerSupplyHMC804x, self).__init__(address)
 
+    def close(self):
+        self.set_output_channel_state("OFF", "OUT1")
+        self.set_output_channel_state("OFF", "OUT2")
+        self.set_output_channel_state("OFF", "OUT3")
+        self.set_output_master_state()
+        self.manager.close()
+        # print("closing pyvisa res in hmc8043")
+
     @exception_handler
     def set_output_channel(self, parameter='OUT1'):
         """Write"""
@@ -225,6 +233,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         ret = self.set_output_channel(channel)
         if not ret[0]:
             return ret
+        # print("OUTP:CHAN " + str(parameter) + channel)
         self.manager.write("OUTP:CHAN " + str(parameter))
 
     @exception_handler
@@ -615,7 +624,7 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT " + str(parameter))
-        # print("VOLT " + str(parameter))
+        # print("VOLT " + str(parameter) + " " + channel)
 
     @exception_handler
     def get_source_voltage_level_immediate_amplitude(self, channel='OUT1'):
