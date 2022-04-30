@@ -86,6 +86,8 @@ class ButtonWithSwitch(QPushButton):
 class Application(QWidget):
     def __init__(self):
         super().__init__(parent=None)
+        self.powersupply_output_area = None
+        self.multimeter_output_area = None
         self.measuring_loop = None
         self.power_supply_tab = None
         self.multimeter_tab = None
@@ -381,25 +383,31 @@ class Application(QWidget):
         except AttributeError:
             self.handle_error("Tab for this device is not available!")
 
-    def send_command(self, func):
+    def send_command(self, func, caller):
         if func is not None:
             res = func()
-            self.evaluate_method_call(res)
+            self.evaluate_method_call(res, caller)
 
-    def send_common_command(self, device_common_commands, device_common_commands_list):
+    def send_common_command(self, device_common_commands, device_common_commands_list, caller):
         inst = device_common_commands.currentText()
         if inst != '':
             res = device_common_commands_list[inst]()
-            self.evaluate_method_call(res)
+            self.evaluate_method_call(res, caller)
 
-    def evaluate_method_call(self, res):
+    def evaluate_method_call(self, res, caller):
         if res[0] is not True:
             self.handle_error(res[2])
         else:
             if res[1] == "Query":
-                print(res[2])
+                if caller == "ps":
+                    self.powersupply_output_area.setText(res[2])
+                else:
+                    self.multimeter_output_area.setText(res[2])
             else:
-                print("write success")
+                if caller == "ps":
+                    self.powersupply_output_area.setText("write success")
+                else:
+                    self.multimeter_output_area.setText("write success")
 
     def add_LowNoise_tab(self):
         self.power_supply_tab = QWidget()
@@ -488,14 +496,27 @@ class Application(QWidget):
         self.power_supply_tab.setAttribute(Qt.WA_DeleteOnClose)
         device_tab_layout = QGridLayout()
 
+        output_box = QGroupBox("Output")
+        output_box_layout = QGridLayout()
+        self.powersupply_output_area = QLineEdit()
+        self.powersupply_output_area.setReadOnly(True)
+        output_box_layout.addWidget(self.powersupply_output_area, 0, 0)
+        output_box.setLayout(output_box_layout)
+        device_tab_layout.addWidget(output_box, 0, 0, 1, 2)
+
         common_command_box = QGroupBox("Common commands")
         common_command_box_layout = QGridLayout()
-        HMC8043_common_commands_list, HMC8043_common_commands, common_commands_button = \
-            self.create_common_commands_list(self.power_supply)
+        HMC8043_common_commands_list, HMC8043_common_commands = self.create_common_commands_list(self.power_supply)
+
+        common_commands_button = QPushButton()
+        common_commands_button.setText("Apply")
+        common_commands_button.clicked.connect(
+            lambda: self.send_common_command(HMC8043_common_commands, HMC8043_common_commands_list, "ps"))
+
         common_command_box_layout.addWidget(HMC8043_common_commands, 0, 0)
         common_command_box_layout.addWidget(common_commands_button, 0, 1)
         common_command_box.setLayout(common_command_box_layout)
-        device_tab_layout.addWidget(common_command_box, 0, 0, 1, 2)
+        device_tab_layout.addWidget(common_command_box, 1, 0, 1, 2)
 
         output_settings_box = QGroupBox("Output options")
         output_settings_box_layout = QGridLayout()
@@ -510,15 +531,16 @@ class Application(QWidget):
         channel_settings_box_layout.addWidget(channel_box, 0, 1, 1, 2)
 
         channel_state = QPushButton("State")
-        channel_state.clicked.connect(lambda: self.send_command(lambda: self.power_supply.get_output_channel_state()))
+        channel_state.clicked.connect(lambda: self. send_command(lambda:
+                                                                 self.power_supply.get_output_channel_state(), "ps"))
         channel_settings_box_layout.addWidget(channel_state, 1, 0)
         channel_activation = QPushButton("Activate")
         channel_activation.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.set_output_channel_state(1, channel_box.currentText())))
+            lambda: self.power_supply.set_output_channel_state(1, channel_box.currentText()), "ps"))
         channel_settings_box_layout.addWidget(channel_activation, 1, 1)
         channel_deactivation = QPushButton("Deactivate")
         channel_deactivation.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.set_output_channel_state(0, channel_box.currentText())))
+            lambda: self.power_supply.set_output_channel_state(0, channel_box.currentText()), "ps"))
         channel_settings_box_layout.addWidget(channel_deactivation, 1, 2)
         channel_settings_box.setLayout(channel_settings_box_layout)
         output_settings_box_layout.addWidget(channel_settings_box, 0, 0)
@@ -530,15 +552,15 @@ class Application(QWidget):
         master_settings_box_layout.addWidget(master_label, 0, 0)
         master_state = QPushButton("State")
         master_state.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.get_output_master_state()))
+            lambda: self.power_supply.get_output_master_state(), "ps"))
         master_settings_box_layout.addWidget(master_state, 0, 1)
         master_activation = QPushButton("Activate")
         master_activation.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.set_output_master_state(1, channel_box.currentText())))
+            lambda: self.power_supply.set_output_master_state(1, channel_box.currentText()), "ps"))
         master_settings_box_layout.addWidget(master_activation, 1, 0)
         master_deactivation = QPushButton("Deactivate")
         master_deactivation.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.set_output_master_state(0, channel_box.currentText())))
+            lambda: self.power_supply.set_output_master_state(0, channel_box.currentText()), "ps"))
         master_settings_box_layout.addWidget(master_deactivation, 1, 1)
         master_settings_box.setLayout(master_settings_box_layout)
         output_settings_box_layout.addWidget(master_settings_box, 1, 0)
@@ -565,7 +587,8 @@ class Application(QWidget):
         fuse_state_box_layout.addWidget(first_fuse_delay_button, 0, 3)
         first_fuse_trip_button = QPushButton()
         first_fuse_trip_button.setText("Trip")
-        first_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT1")))
+        first_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda:
+                                                                         self.power_supply.fuse_trip("OUT1"), "ps"))
         first_fuse_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         fuse_state_box_layout.addWidget(first_fuse_trip_button, 0, 4)
         fuse_state_box_layout.addWidget(QLabel("Fuse 2", ), 1, 0)
@@ -583,7 +606,8 @@ class Application(QWidget):
         fuse_state_box_layout.addWidget(second_fuse_delay_button, 1, 3)
         second_fuse_trip_button = QPushButton()
         second_fuse_trip_button.setText("Trip")
-        second_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT2")))
+        second_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda:
+                                                                          self.power_supply.fuse_trip("OUT2"), "ps"))
         second_fuse_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         fuse_state_box_layout.addWidget(second_fuse_trip_button, 1, 4)
         fuse_state_box_layout.addWidget(QLabel("Fuse 3", ), 2, 0)
@@ -601,7 +625,8 @@ class Application(QWidget):
         fuse_state_box_layout.addWidget(third_fuse_delay_button, 2, 3)
         third_fuse_trip_button = QPushButton()
         third_fuse_trip_button.setText("Trip")
-        third_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda: self.power_supply.fuse_trip("OUT3")))
+        third_fuse_trip_button.clicked.connect(lambda: self.send_command(lambda:
+                                                                         self.power_supply.fuse_trip("OUT3"), "ps"))
         third_fuse_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         fuse_state_box_layout.addWidget(third_fuse_trip_button, 2, 4)
         fuse_state_box.setLayout(fuse_state_box_layout)
@@ -642,7 +667,7 @@ class Application(QWidget):
         measure_selected_value = ButtonWithSwitch()
         measure_selected_value.setText("Query")
         measure_selected_value.clicked.connect(
-            lambda: self.send_command(lambda: measurement_box.currentData()(channel_box.currentText())))
+            lambda: self.send_command(lambda: measurement_box.currentData()(channel_box.currentText()), "ps"))
         measurement_options_box_layout.addWidget(measure_selected_value, 0, 2)
         measurement_options_box.setLayout(measurement_options_box_layout)
         device_tab_layout.addWidget(measurement_options_box, 2, 0, 1, 2)
@@ -671,7 +696,7 @@ class Application(QWidget):
         ainput_layout.addWidget(first_channel_ainput_state, 1, 1, 1, 4)
         first_channel_ainput_state.clicked.connect(lambda: self.send_command(self.setup_channel_ainput(
             ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
-            "OUT1", channel_box.currentText())))
+            "OUT1", channel_box.currentText()), "ps"))
 
         ainput_layout.addWidget(QLabel("CH2:"), 2, 0)
         second_channel_ainput_state = ButtonWithSwitch()
@@ -679,7 +704,7 @@ class Application(QWidget):
         ainput_layout.addWidget(second_channel_ainput_state, 2, 1, 1, 4)
         second_channel_ainput_state.clicked.connect(lambda: self.send_command(self.setup_channel_ainput(
             ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
-            "OUT2", channel_box.currentText())))
+            "OUT2", channel_box.currentText()), "ps"))
 
         ainput_layout.addWidget(QLabel("CH3:"), 3, 0)
         third_channel_ainput_state = ButtonWithSwitch()
@@ -687,7 +712,7 @@ class Application(QWidget):
         ainput_layout.addWidget(third_channel_ainput_state, 3, 1, 1, 4)
         third_channel_ainput_state.clicked.connect(lambda: self.send_command(self.setup_channel_ainput(
             ainput_unit.itemData(ainput_unit.currentIndex()), ainput_mode.itemData(ainput_mode.currentIndex()),
-            "OUT3", channel_box.currentText())))
+            "OUT3", channel_box.currentText()), "ps"))
 
         ainput_box.setLayout(ainput_layout)
         ainput_ramp_layout.addWidget(ainput_box, 0, 0)
@@ -700,26 +725,26 @@ class Application(QWidget):
         easyramp_duration.setMinimum(1.00E-02)
         easyramp_duration.setMaximum(1.000E+01)
         easyramp_duration.editingFinished.connect(lambda: self.send_command(
-            lambda: self.power_supply.set_source_voltage_ramp_duration(easyramp_duration.value())))
+            lambda: self.power_supply.set_source_voltage_ramp_duration(easyramp_duration.value()), "ps"))
         easyramp_layout.addWidget(easyramp_duration, 0, 1)
 
         first_channel_easyramp_state = ButtonWithSwitch()
         first_channel_easyramp_state.setText("Activate")
         easyramp_layout.addWidget(first_channel_easyramp_state, 1, 0, 1, 2)
         first_channel_easyramp_state.clicked.connect(lambda: self.send_command(
-            self.set_easyramp_state("OUT1", channel_box.currentText())))
+            self.set_easyramp_state("OUT1", channel_box.currentText()), "ps"))
 
         second_channel_easyramp_state = ButtonWithSwitch()
         second_channel_easyramp_state.setText("Activate")
         easyramp_layout.addWidget(second_channel_easyramp_state, 2, 0, 1, 2)
         second_channel_easyramp_state.clicked.connect(lambda: self.send_command(
-            self.set_easyramp_state("OUT2", channel_box.currentText())))
+            self.set_easyramp_state("OUT2", channel_box.currentText()), "ps"))
 
         third_channel_easyramp_state = ButtonWithSwitch()
         third_channel_easyramp_state.setText("Activate")
         easyramp_layout.addWidget(third_channel_easyramp_state, 3, 0, 1, 2)
         third_channel_easyramp_state.clicked.connect(lambda: self.send_command(
-            self.set_easyramp_state("OUT3", channel_box.currentText())))
+            self.set_easyramp_state("OUT3", channel_box.currentText()), "ps"))
 
         easyramp_box.setLayout(easyramp_layout)
         ainput_ramp_layout.addWidget(easyramp_box, 0, 1)
@@ -869,7 +894,7 @@ class Application(QWidget):
         first_channel_ovp_value.setDecimals(3)
         first_channel_ovp_value.setSingleStep(1.0000E-03)
         first_channel_ovp_value.valueChanged.connect(lambda: self.send_command(
-            self.change_ovp_value("OUT1", channel_box.currentText())))
+            self.change_ovp_value("OUT1", channel_box.currentText()), "ps"))
         ovp_layout.addWidget(first_channel_ovp_value, 0, 1)
         ovp_layout.addWidget(QLabel("Mode:"), 0, 2)
         first_channel_ovp_mode = QComboBox()
@@ -887,13 +912,13 @@ class Application(QWidget):
         first_ovp_trip_button = QPushButton()
         first_ovp_trip_button.setText("Trip")
         first_ovp_trip_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_voltage_protection_trip("OUT1")))
+            lambda: self.power_supply.source_voltage_protection_trip("OUT1"), "ps"))
         first_ovp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         ovp_layout.addWidget(first_ovp_trip_button, 0, 5)
         first_ovp_clear_button = QPushButton()
         first_ovp_clear_button.setText("Clear")
         first_ovp_clear_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_voltage_protection_clear("OUT1")))
+            lambda: self.power_supply.source_voltage_protection_clear("OUT1"), "ps"))
         first_ovp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         ovp_layout.addWidget(first_ovp_clear_button, 0, 6)
 
@@ -904,7 +929,7 @@ class Application(QWidget):
         second_channel_ovp_value.setDecimals(3)
         second_channel_ovp_value.setSingleStep(1.0000E-03)
         second_channel_ovp_value.valueChanged.connect(lambda: self.send_command(
-            self.change_ovp_value("OUT2", channel_box.currentText())))
+            self.change_ovp_value("OUT2", channel_box.currentText()), "ps"))
         ovp_layout.addWidget(second_channel_ovp_value, 1, 1)
         ovp_layout.addWidget(QLabel("Mode:"), 1, 2)
         second_channel_ovp_mode = QComboBox()
@@ -922,13 +947,13 @@ class Application(QWidget):
         second_ovp_trip_button = QPushButton()
         second_ovp_trip_button.setText("Trip")
         second_ovp_trip_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_voltage_protection_trip("OUT2")))
+            lambda: self.power_supply.source_voltage_protection_trip("OUT2"), "ps"))
         second_ovp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         ovp_layout.addWidget(second_ovp_trip_button, 1, 5)
         second_ovp_clear_button = QPushButton()
         second_ovp_clear_button.setText("Clear")
         second_ovp_clear_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_voltage_protection_clear("OUT2")))
+            lambda: self.power_supply.source_voltage_protection_clear("OUT2"), "ps"))
         second_ovp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         ovp_layout.addWidget(second_ovp_clear_button, 1, 6)
 
@@ -939,7 +964,7 @@ class Application(QWidget):
         third_channel_ovp_value.setDecimals(3)
         third_channel_ovp_value.setSingleStep(1.0000E-03)
         third_channel_ovp_value.valueChanged.connect(lambda: self.send_command(
-            self.change_ovp_value("OUT3", channel_box.currentText())))
+            self.change_ovp_value("OUT3", channel_box.currentText()), "ps"))
         ovp_layout.addWidget(third_channel_ovp_value, 2, 1)
         ovp_layout.addWidget(QLabel("Mode:"), 2, 2)
         third_channel_ovp_mode = QComboBox()
@@ -957,13 +982,13 @@ class Application(QWidget):
         third_ovp_trip_button = QPushButton()
         third_ovp_trip_button.setText("Trip")
         third_ovp_trip_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_voltage_protection_trip("OUT3")))
+            lambda: self.power_supply.source_voltage_protection_trip("OUT3"), "ps"))
         third_ovp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         ovp_layout.addWidget(third_ovp_trip_button, 2, 5)
         third_ovp_clear_button = QPushButton()
         third_ovp_clear_button.setText("Clear")
         third_ovp_clear_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_voltage_protection_clear("OUT3")))
+            lambda: self.power_supply.source_voltage_protection_clear("OUT3"), "ps"))
         third_ovp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         ovp_layout.addWidget(third_ovp_clear_button, 2, 6)
 
@@ -978,7 +1003,7 @@ class Application(QWidget):
         first_channel_opp_value.setDecimals(2)
         first_channel_opp_value.setSingleStep(1.0000E-02)
         first_channel_opp_value.valueChanged.connect(lambda: self.send_command(
-            self.change_opp_value("OUT1", channel_box.currentText())))
+            self.change_opp_value("OUT1", channel_box.currentText()), "ps"))
         opp_layout.addWidget(first_channel_opp_value, 0, 1)
         first_opp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                          animation_duration=100, checked=False, change_cursor=True)
@@ -988,13 +1013,13 @@ class Application(QWidget):
         first_opp_trip_button = QPushButton()
         first_opp_trip_button.setText("Trip")
         first_opp_trip_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_power_protection_trip("OUT1")))
+            lambda: self.power_supply.source_power_protection_trip("OUT1"), "ps"))
         first_opp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         opp_layout.addWidget(first_opp_trip_button, 0, 3)
         first_opp_clear_button = QPushButton()
         first_opp_clear_button.setText("Clear")
         first_opp_clear_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_power_protection_clear("OUT1")))
+            lambda: self.power_supply.source_power_protection_clear("OUT1"), "ps"))
         first_opp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         opp_layout.addWidget(first_opp_clear_button, 0, 4)
 
@@ -1005,7 +1030,7 @@ class Application(QWidget):
         second_channel_opp_value.setDecimals(2)
         second_channel_opp_value.setSingleStep(1.0000E-02)
         second_channel_opp_value.valueChanged.connect(lambda: self.send_command(
-            self.change_opp_value("OUT2", channel_box.currentText())))
+            self.change_opp_value("OUT2", channel_box.currentText()), "ps"))
         opp_layout.addWidget(second_channel_opp_value, 1, 1)
         second_opp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                           animation_duration=100, checked=False, change_cursor=True)
@@ -1015,13 +1040,13 @@ class Application(QWidget):
         second_opp_trip_button = QPushButton()
         second_opp_trip_button.setText("Trip")
         second_opp_trip_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_power_protection_trip("OUT2")))
+            lambda: self.power_supply.source_power_protection_trip("OUT2"), "ps"))
         second_opp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         opp_layout.addWidget(second_opp_trip_button, 1, 3)
         second_opp_clear_button = QPushButton()
         second_opp_clear_button.setText("Clear")
         second_opp_clear_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_power_protection_clear("OUT2")))
+            lambda: self.power_supply.source_power_protection_clear("OUT2"), "ps"))
         second_opp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         opp_layout.addWidget(second_opp_clear_button, 1, 4)
 
@@ -1032,7 +1057,7 @@ class Application(QWidget):
         third_channel_opp_value.setDecimals(2)
         third_channel_opp_value.setSingleStep(1.0000E-02)
         third_channel_opp_value.valueChanged.connect(lambda: self.send_command(
-            self.change_opp_value("OUT3", channel_box.currentText())))
+            self.change_opp_value("OUT3", channel_box.currentText()), "ps"))
         opp_layout.addWidget(third_channel_opp_value, 2, 1)
         third_opp_switch = SwitchControl(bg_color="#455364", circle_color="#DDD", active_color="#259adf",
                                          animation_duration=100, checked=False, change_cursor=True)
@@ -1042,13 +1067,13 @@ class Application(QWidget):
         third_opp_trip_button = QPushButton()
         third_opp_trip_button.setText("Trip")
         third_opp_trip_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_power_protection_trip("OUT3")))
+            lambda: self.power_supply.source_power_protection_trip("OUT3"), "ps"))
         third_opp_trip_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         opp_layout.addWidget(third_opp_trip_button, 2, 3)
         third_opp_clear_button = QPushButton()
         third_opp_clear_button.setText("Clear")
         third_opp_clear_button.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.source_power_protection_clear("OUT3")))
+            lambda: self.power_supply.source_power_protection_clear("OUT3"), "ps"))
         third_opp_clear_button.clicked.connect(lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         opp_layout.addWidget(third_opp_clear_button, 2, 4)
 
@@ -1067,12 +1092,12 @@ class Application(QWidget):
         first_channel_energy_meter_state.setText("Activate")
         energy_meter_layout.addWidget(first_channel_energy_meter_state, 0, 1)
         first_channel_energy_meter_state.clicked.connect(lambda: self.send_command(
-            self.set_energy_meter_state("OUT1", channel_box.currentText())))
+            self.set_energy_meter_state("OUT1", channel_box.currentText()), "ps"))
 
         first_channel_energy_meter_reset = QPushButton()
         first_channel_energy_meter_reset.setText("Reset")
         first_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.measure_scalar_energy_reset("OUT1")))
+            lambda: self.power_supply.measure_scalar_energy_reset("OUT1"), "ps"))
         first_channel_energy_meter_reset.clicked.connect(
             lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         energy_meter_layout.addWidget(first_channel_energy_meter_reset, 0, 2)
@@ -1082,12 +1107,12 @@ class Application(QWidget):
         second_channel_energy_meter_state.setText("Activate")
         energy_meter_layout.addWidget(second_channel_energy_meter_state, 1, 1)
         second_channel_energy_meter_state.clicked.connect(lambda: self.send_command(
-            self.set_energy_meter_state("OUT2", channel_box.currentText())))
+            self.set_energy_meter_state("OUT2", channel_box.currentText()), "ps"))
 
         second_channel_energy_meter_reset = QPushButton()
         second_channel_energy_meter_reset.setText("Reset")
         second_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.measure_scalar_energy_reset("OUT2")))
+            lambda: self.power_supply.measure_scalar_energy_reset("OUT2"), "ps"))
         second_channel_energy_meter_reset.clicked.connect(
             lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         energy_meter_layout.addWidget(second_channel_energy_meter_reset, 1, 2)
@@ -1097,12 +1122,12 @@ class Application(QWidget):
         third_channel_energy_meter_state.setText("Activate")
         energy_meter_layout.addWidget(third_channel_energy_meter_state, 2, 1)
         third_channel_energy_meter_state.clicked.connect(lambda: self.send_command(
-            self.set_energy_meter_state("OUT3", channel_box.currentText())))
+            self.set_energy_meter_state("OUT3", channel_box.currentText()), "ps"))
 
         third_channel_energy_meter_reset = QPushButton()
         third_channel_energy_meter_reset.setText("Reset")
         third_channel_energy_meter_reset.clicked.connect(lambda: self.send_command(
-            lambda: self.power_supply.measure_scalar_energy_reset("OUT3")))
+            lambda: self.power_supply.measure_scalar_energy_reset("OUT3"), "ps"))
         third_channel_energy_meter_reset.clicked.connect(
             lambda: self.power_supply.set_output_channel(channel_box.currentText()))
         energy_meter_layout.addWidget(third_channel_energy_meter_reset, 2, 2)
@@ -1118,31 +1143,31 @@ class Application(QWidget):
     def set_energy_meter_state(self, affected_channel, selected_channel):
         sender = self.sender()
         if sender.isActivated:
-            self.send_command(lambda: self.power_supply.set_measure_scalar_energy_state(0, affected_channel))
+            self.send_command(lambda: self.power_supply.set_measure_scalar_energy_state(0, affected_channel), "ps")
             sender.setText("Activate")
             sender.isActivated = False
         else:
-            self.send_command(lambda: self.power_supply.set_measure_scalar_energy_state(1, affected_channel))
+            self.send_command(lambda: self.power_supply.set_measure_scalar_energy_state(1, affected_channel), "ps")
             sender.setText("Deactivate")
             sender.isActivated = True
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def set_easyramp_state(self, affected_channel, selected_channel):
         sender = self.sender()
         if sender.isActivated:
-            self.send_command(lambda: self.power_supply.set_source_voltage_ramp_state(0, affected_channel))
+            self.send_command(lambda: self.power_supply.set_source_voltage_ramp_state(0, affected_channel), "ps")
             sender.setText("Activate")
             sender.isActivated = False
         else:
-            self.send_command(lambda: self.power_supply.set_source_voltage_ramp_state(1, affected_channel))
+            self.send_command(lambda: self.power_supply.set_source_voltage_ramp_state(1, affected_channel), "ps")
             sender.setText("Deactivate")
             sender.isActivated = True
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def setup_channel_ainput(self, ainput_unit, ainput_mode, affected_channel, selected_channel):
         sender = self.sender()
         if sender.isActivated:
-            self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(0, affected_channel))
+            self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(0, affected_channel), "ps")
             sender.setText("Activate")
             sender.isActivated = False
         else:
@@ -1151,112 +1176,113 @@ class Application(QWidget):
                     "STEP threshold", "Set the threshold for the Analog In mode STEP of channel "
                                       + affected_channel + "(0V to 10V)")
                 if was_success:
-                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_mode(ainput_mode))
-                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_input(ainput_unit))
-                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_threshold(user_input))
-                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(1, affected_channel))
+                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_mode(ainput_mode), "ps")
+                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_input(ainput_unit), "ps")
+                    self.send_command(lambda: self.power_supply.set_source_voltage_ainput_threshold(user_input), "ps")
+                    self.send_command(lambda:
+                                      self.power_supply.set_source_voltage_ainput_state(1, affected_channel), "ps")
                     sender.setText("Deactivate")
                     sender.isActivated = True
             else:
-                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_mode(ainput_mode))
-                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_input(ainput_unit))
-                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(1, affected_channel))
+                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_mode(ainput_mode), "ps")
+                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_input(ainput_unit), "ps")
+                self.send_command(lambda: self.power_supply.set_source_voltage_ainput_state(1, affected_channel), "ps")
                 sender.setText("Deactivate")
                 sender.isActivated = True
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def change_ovp_mode(self, affected_channel, selected_channel):
         self.send_command(lambda: self.power_supply.set_source_voltage_protection_mode(
-            self.sender().itemData(self.sender().currentIndex()), affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            self.sender().itemData(self.sender().currentIndex()), affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def change_opp_state(self, affected_channel, selected_channel):
         state = self.sender().checkState()
         if state == Qt.Checked:
-            self.send_command(lambda: self.power_supply.set_source_power_protection_state(1, affected_channel))
+            self.send_command(lambda: self.power_supply.set_source_power_protection_state(1, affected_channel), "ps")
         elif state == Qt.Unchecked:
-            self.send_command(lambda: self.power_supply.set_source_power_protection_state(0, affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            self.send_command(lambda: self.power_supply.set_source_power_protection_state(0, affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def change_opp_value(self, affected_channel, selected_channel):
         pow_value = round(self.sender().value(), 2)
         self.send_command(
-            lambda: self.power_supply.set_source_power_protection_level(pow_value, affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            lambda: self.power_supply.set_source_power_protection_level(pow_value, affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def change_ovp_state(self, affected_channel, selected_channel):
         state = self.sender().checkState()
         if state == Qt.Checked:
-            self.send_command(lambda: self.power_supply.set_source_voltage_protection_state(1, affected_channel))
+            self.send_command(lambda: self.power_supply.set_source_voltage_protection_state(1, affected_channel), "ps")
         elif state == Qt.Unchecked:
-            self.send_command(lambda: self.power_supply.set_source_voltage_protection_state(0, affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            self.send_command(lambda: self.power_supply.set_source_voltage_protection_state(0, affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def change_ovp_value(self, affected_channel, selected_channel):
         volt_value = round(self.sender().value(), 3)
         self.send_command(
-            lambda: self.power_supply.set_source_voltage_protection_level(volt_value, affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            lambda: self.power_supply.set_source_voltage_protection_level(volt_value, affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def change_channel_voltage(self, affected_channel, selected_channel):
         voltage = round(self.sender().value(), 3)
         self.send_command(
-            lambda: self.power_supply.set_source_voltage_level_immediate_amplitude(voltage, affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            lambda: self.power_supply.set_source_voltage_level_immediate_amplitude(voltage, affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def increase_channel_voltage(self, affected_channel, selected_channel):
         self.send_command(
-            lambda: self.power_supply.vary_source_voltage_level_immediate_amplitude("UP", affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            lambda: self.power_supply.vary_source_voltage_level_immediate_amplitude("UP", affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def decrease_channel_voltage(self, affected_channel, selected_channel):
         self.send_command(
-            lambda: self.power_supply.vary_source_voltage_level_immediate_amplitude("DOWN", affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            lambda: self.power_supply.vary_source_voltage_level_immediate_amplitude("DOWN", affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def volt_step_changed(self):
         step = round(self.sender().value(), 3)
-        self.send_command(lambda: self.power_supply.set_source_voltage_level_step_increment(step))
+        self.send_command(lambda: self.power_supply.set_source_voltage_level_step_increment(step), "ps")
 
     def change_channel_current(self, affected_channel, selected_channel):
         current = round(self.sender().value(), 4)
         self.send_command(
-            lambda: self.power_supply.set_source_current_level_immediate_amplitude(current, affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            lambda: self.power_supply.set_source_current_level_immediate_amplitude(current, affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def increase_channel_current(self, affected_channel, selected_channel):
         self.send_command(
-            lambda: self.power_supply.vary_source_current_level_immediate_amplitude("UP", affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            lambda: self.power_supply.vary_source_current_level_immediate_amplitude("UP", affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def decrease_channel_current(self, affected_channel, selected_channel):
         self.send_command(
-            lambda: self.power_supply.vary_source_current_level_immediate_amplitude("DOWN", affected_channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            lambda: self.power_supply.vary_source_current_level_immediate_amplitude("DOWN", affected_channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def curr_step_changed(self):
         step = round(self.sender().value(), 4)
-        self.send_command(lambda: self.power_supply.set_source_current_level_step_increment(step))
+        self.send_command(lambda: self.power_supply.set_source_current_level_step_increment(step), "ps")
 
     def link_unlink_fuse(self, fuse_to_link, fuse_to_be_linked, selected_channel):
         sender = self.sender()
         if sender.isActivated:
-            self.send_command(lambda: self.power_supply.set_output_channel(fuse_to_be_linked))
-            self.send_command(lambda: self.power_supply.fuse_unlink(fuse_to_link))
+            self.send_command(lambda: self.power_supply.set_output_channel(fuse_to_be_linked), "ps")
+            self.send_command(lambda: self.power_supply.fuse_unlink(fuse_to_link), "ps")
             sender.setText("Link")
             sender.isActivated = False
         else:
-            self.send_command(lambda: self.power_supply.set_fuse_link(fuse_to_link, fuse_to_be_linked))
+            self.send_command(lambda: self.power_supply.set_fuse_link(fuse_to_link, fuse_to_be_linked), "ps")
             sender.setText("Unlink")
             sender.isActivated = True
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def change_fuse_state(self, state, channel, selected_channel):
         if state == Qt.Checked:
-            self.send_command(lambda: self.power_supply.set_fuse_state(1, channel))
+            self.send_command(lambda: self.power_supply.set_fuse_state(1, channel), "ps")
         elif state == Qt.Unchecked:
-            self.send_command(lambda: self.power_supply.set_fuse_state(0, channel))
-        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+            self.send_command(lambda: self.power_supply.set_fuse_state(0, channel), "ps")
+        self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def set_fuse_delay(self, fuse_number, selected_channel):
         fuse_number = str(fuse_number)
@@ -1264,24 +1290,37 @@ class Application(QWidget):
                                                                                                          "empty)")
         if was_success:
             if user_input.isspace() or not user_input:
-                self.send_command(lambda: self.power_supply.set_fuse_delay("MIN", "OUT" + fuse_number))
+                self.send_command(lambda: self.power_supply.set_fuse_delay("MIN", "OUT" + fuse_number), "ps")
             else:
-                self.send_command(lambda: self.power_supply.set_fuse_delay(user_input, "OUT" + fuse_number))
-            self.send_command(lambda: self.power_supply.set_output_channel(selected_channel))
+                self.send_command(lambda: self.power_supply.set_fuse_delay(user_input, "OUT" + fuse_number), "ps")
+            self.send_command(lambda: self.power_supply.set_output_channel(selected_channel), "ps")
 
     def add_HMC8012_tab(self):
         self.multimeter_tab = QWidget()
         self.multimeter_tab.setAttribute(Qt.WA_DeleteOnClose)
         device_tab_layout = QGridLayout()
 
+        output_box = QGroupBox("Output")
+        output_box_layout = QGridLayout()
+        self.multimeter_output_area = QLineEdit()
+        self.multimeter_output_area.setReadOnly(True)
+        output_box_layout.addWidget(self.multimeter_output_area, 0, 0)
+        output_box.setLayout(output_box_layout)
+        device_tab_layout.addWidget(output_box, 0, 0, 1, 1)
+
         common_command_box = QGroupBox("Common commands")
         common_command_box_layout = QGridLayout()
-        HMC8012_common_commands_list, HMC8012_common_commands, common_commands_button = \
-            self.create_common_commands_list(self.multimeter)
+        HMC8012_common_commands_list, HMC8012_common_commands = self.create_common_commands_list(self.multimeter)
+
+        common_commands_button = QPushButton()
+        common_commands_button.setText("Apply")
+        common_commands_button.clicked.connect(
+            lambda: self.send_common_command(HMC8012_common_commands, HMC8012_common_commands_list, "m"))
+
         common_command_box_layout.addWidget(HMC8012_common_commands, 0, 0)
         common_command_box_layout.addWidget(common_commands_button, 0, 1)
         common_command_box.setLayout(common_command_box_layout)
-        device_tab_layout.addWidget(common_command_box, 0, 0, 1, 1)
+        device_tab_layout.addWidget(common_command_box, 1, 0, 1, 1)
 
         temperature_box = QGroupBox("Temperature settings")
         temperature_box_layout = QGridLayout()
@@ -1319,7 +1358,7 @@ class Application(QWidget):
             sensor_type.currentText()))
         temperature_box_layout.addWidget(setup_temperature_button, 0, 2, 3, 1)
         temperature_box.setLayout(temperature_box_layout)
-        device_tab_layout.addWidget(temperature_box, 0, 1, 1, 1)
+        device_tab_layout.addWidget(temperature_box, 0, 1, 2, 1)
 
         function_box = QGroupBox("Measurement options")
         function_box_layout = QGridLayout()
@@ -1374,8 +1413,8 @@ class Application(QWidget):
         function_box_layout.addWidget(statistic_function, 2, 1)
 
         activate_statistic_function = QPushButton()
-        activate_statistic_function.setText("Get")
-        activate_statistic_function.clicked.connect(lambda: self.send_command(statistic_function.currentData()))
+        activate_statistic_function.setText("Set")
+        activate_statistic_function.clicked.connect(lambda: self.send_command(statistic_function.currentData(), "m"))
         function_box_layout.addWidget(activate_statistic_function, 2, 2)
 
         self.switch_tab_bar()
@@ -1386,11 +1425,11 @@ class Application(QWidget):
     def activate_calc_function(self):
         sender = self.sender()
         if sender.isActivated:
-            self.send_command(lambda: self.multimeter.toggle_calculate_function("OFF"))
+            self.send_command(lambda: self.multimeter.toggle_calculate_function("OFF"), "m")
             sender.setText("Activate")
             sender.isActivated = False
         else:
-            self.send_command(self.multimeter.toggle_calculate_function)
+            self.send_command(self.multimeter.toggle_calculate_function, "m")
             sender.setText("Deactivate")
             sender.isActivated = True
 
@@ -1402,7 +1441,7 @@ class Application(QWidget):
             kwargs.update({"probe_type": probe})
         if sensor != '':
             kwargs.update({"sensor_type": sensor})
-        self.send_command(lambda: self.multimeter.measure_temperature(**kwargs))
+        self.send_command(lambda: self.multimeter.measure_temperature(**kwargs), "m")
 
     def set_mathematic_function(self, last, new):
         sender = self.sender()
@@ -1411,30 +1450,30 @@ class Application(QWidget):
                 user_input, was_success = self.get_user_input("Maximum null", "Enter maximum NULL value (MIN if empty)")
                 if was_success:
                     if user_input.isspace() or not user_input:
-                        self.send_command(self.multimeter.set_calculate_null_offset)
+                        self.send_command(self.multimeter.set_calculate_null_offset, "m")
                     else:
-                        self.send_command(lambda: self.multimeter.set_calculate_null_offset(user_input))
+                        self.send_command(lambda: self.multimeter.set_calculate_null_offset(user_input), "m")
                 else:
                     sender.blockSignals(True)
                     sender.setCurrentIndex(last)
                     sender.blockSignals(False)
-            self.send_command(lambda: self.multimeter.set_calculate_function(sender.currentText()))
+            self.send_command(lambda: self.multimeter.set_calculate_function(sender.currentText()), "m")
 
     def configure_multimeter_measurements(self, last, new):
         sender = self.sender()
         if not (new < 0):
             if sender.currentText() == 'Diode tests':
                 func = sender.itemData(new)
-                self.send_command(func)
+                self.send_command(func, "m")
             else:
                 func = sender.itemData(new)
                 user_input, was_success = self.get_user_input("Measurement range",
                                                               "Enter desired range (AUTO if empty)")
                 if was_success:
                     if user_input.isspace() or not user_input:
-                        self.send_command(func)
+                        self.send_command(func, "m")
                     else:
-                        self.send_command(lambda: func(user_input))
+                        self.send_command(lambda: func(user_input), "m")
                 else:
                     sender.blockSignals(True)
                     sender.setCurrentIndex(last)
@@ -1454,11 +1493,7 @@ class Application(QWidget):
         cmds_box = QComboBox()
         cmds_box.addItems(cmds_list)
         cmds_box.setCurrentIndex(-1)
-
-        cmds_button = QPushButton()
-        cmds_button.setText("Apply")
-        cmds_button.clicked.connect(lambda: self.send_common_command(cmds_box, cmds_list))
-        return cmds_list, cmds_box, cmds_button
+        return cmds_list, cmds_box
 
     def get_device_options(self):
         devices = {
