@@ -1,3 +1,6 @@
+import pyvisa
+import serial
+from serial import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import qdarkstyle
@@ -103,6 +106,13 @@ class Application(QWidget):
         self.file_writer = None
         self.output_file = None
 
+        self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QLabel, QPushButton, QComboBox, QTabWidget, "
+                                                                "QDoubleSpinBox, QLineEdit, QSpinBox"
+                                                                "{font-size: 11pt;"
+                                                                "font-weight: 500;"
+                                                                "font-family: Arial;}" +
+                           "QGroupBox{font-size: 10pt;}")
+
         self.device_options = self.get_device_options()
 
         self.powersupply_button = None
@@ -113,12 +123,6 @@ class Application(QWidget):
         self.tab_bar = self.make_tab_bar()
 
         self.setWindowTitle("Measure it")
-        self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QLabel, QPushButton, QComboBox, QTabWidget, "
-                                                                "QDoubleSpinBox, QLineEdit, QSpinBox"
-                                                                "{font-size: 11pt;"
-                                                                "font-weight: 500;"
-                                                                "font-family: Arial;}" +
-                           "QGroupBox{font-size: 10pt;}")
 
         layout = QGridLayout()
 
@@ -1479,8 +1483,8 @@ class Application(QWidget):
                     sender.setCurrentIndex(last)
                     sender.blockSignals(False)
 
-    def get_user_input(self, title, label):
-        text, ok = QInputDialog.getText(self, title, label)
+    def get_user_input(self, title, prompt):
+        text, ok = QInputDialog.getText(self, title, prompt)
         return text, ok
 
     def create_common_commands_list(self, device):
@@ -1498,18 +1502,36 @@ class Application(QWidget):
     def get_device_options(self):
         devices = {
             "HMC8012": "8012",
-            "HMC8043": "8043",
-            "LowNoise": "COM5"
+            "HMC8043": "8043"
+            # "LowNoise": "COM5"
         }
-        # rm = pyvisa.ResourceManager('@py')
-        # resources = rm.list_resources()
-        # for res in resources:
+        user_input, was_success = self.get_user_input("pySerial device address input", "Enter address for LowNoise, "
+                                                                                       "if connected")
+        if was_success:
+            try:
+                ser = serial.Serial(
+                    port=user_input,
+                    baudrate=115200,
+                    bytesize=EIGHTBITS,
+                    parity=PARITY_NONE,
+                    stopbits=STOPBITS_ONE
+                )
+                ser.close()
+                devices["LowNoise"] = user_input
+            except serial.SerialException:
+                self.handle_error("Device address is invalid")
+        rm = pyvisa.ResourceManager('@py')
+        resources = rm.list_resources()
+        for res in resources:
             # if res != "ASRL5::INSTR":
-                # inst = rm.open_resource(res)
-                # idn = inst.query("*IDN?").split(",")[1]
-                # devices[idn] = res
-                # inst.close()
-        # rm.close()
+            try:
+                inst = rm.open_resource(res)
+                idn = inst.query("*IDN?").split(",")[1]
+                devices[idn] = res
+                inst.close()
+            except pyvisa.VisaIOError:
+                pass
+        rm.close()
         return devices
 
 # devices[((inst.query("*IDN?")).split(","))[1]] = res
