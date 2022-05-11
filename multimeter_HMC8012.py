@@ -1,3 +1,5 @@
+import random
+
 from driver import InstrumentDriver, exception_handler
 
 

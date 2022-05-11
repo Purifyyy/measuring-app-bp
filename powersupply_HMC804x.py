@@ -6,21 +6,12 @@ class PowerSupplyHMC804x(InstrumentDriver):
     def __init__(self, address):
         super(PowerSupplyHMC804x, self).__init__(address)
 
-    def close(self):
-        self.set_output_channel_state("OFF", "OUT1")
-        self.set_output_channel_state("OFF", "OUT2")
-        self.set_output_channel_state("OFF", "OUT3")
-        self.set_output_master_state()
-        self.manager.close()
-        # print("closing pyvisa res in hmc8043")
-
     @exception_handler
     def set_output_channel(self, parameter='OUT1'):
         """Write"""
         # INSTrument[:SELect] {OUTPut1 | OUTPut2 | OUTPut3 | OUT1 | OUT2 | OUT3}
         # Selects a channel
         self.manager.write("INST " + str(parameter))
-        # print("INST " + str(parameter))
 
     @exception_handler
     def get_output_channel(self):
@@ -63,7 +54,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         ret = self.set_output_channel(channel)
         if not ret[0]:
             return ret
-        # print("FUSE:DEL " + str(parameter))
         self.manager.write("FUSE:DEL " + str(parameter))
 
     @exception_handler
@@ -86,7 +76,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("FUSE:LINK " + str(parameter))
-        # print("FUSE:LINK " + str(parameter))
 
     @exception_handler
     def get_fuse_link(self, parameter='1', channel='OUT1'):
@@ -111,7 +100,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  2 = channel CH2
         #  3 = channel CH3
         self.manager.write("FUSE:UNL " + str(parameter))
-        # print("FUSE:UNL " + str(parameter))
 
     @exception_handler
     def fuse_trip(self, channel='OUT1'):
@@ -181,7 +169,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("MEAS:ENER:STAT " + str(parameter))
-        # print("MEAS:ENER:STAT " + str(parameter))
 
     @exception_handler
     def get_measure_scalar_energy_state(self, channel='OUT1'):
@@ -203,7 +190,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("MEAS:ENER:RES")
-        # print("MEAS:ENER:RES")
 
     @exception_handler
     def set_output_state(self, parameter='0', channel='OUT1'):
@@ -233,7 +219,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         ret = self.set_output_channel(channel)
         if not ret[0]:
             return ret
-        # print("OUTP:CHAN " + str(parameter) + channel)
         self.manager.write("OUTP:CHAN " + str(parameter))
 
     @exception_handler
@@ -276,7 +261,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("CURR " + str(parameter))
-        # print("CURR " + str(parameter))
 
     @exception_handler
     def get_source_current_level_immediate_amplitude(self, channel='OUT1'):
@@ -298,7 +282,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("CURR " + str(parameter))
-        # print("CURR " + str(parameter))
 
     @exception_handler
     def set_source_current_level_step_increment(self, parameter='DEF'):
@@ -311,7 +294,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  5.0000E-04 to 1.0000E+01 (R&S®HMC8041)
         #  DEF: 1.0000E-01
         self.manager.write("CURR:STEP " + str(parameter))
-        # print("CURR:STEP " + str(parameter))
 
     @exception_handler
     def get_source_current_level_step_increment(self, channel='OUT1'):
@@ -332,7 +314,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         ret = self.set_output_channel(channel)
         if not ret[0]:
             return ret
-        # print("VOLT:PROT " + str(parameter))
         self.manager.write("VOLT:PROT " + str(parameter))
 
     @exception_handler
@@ -359,7 +340,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT:PROT:LEV " + str(parameter))
-        # print("VOLT:PROT:LEV " + str(parameter))
 
     @exception_handler
     def get_source_voltage_protection_level(self, channel='OUT1'):
@@ -395,7 +375,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT:PROT:CLE")
-        # print("VOLT:PROT:CLE")
 
     @exception_handler
     def set_source_voltage_protection_mode(self, parameter='MEAS', channel='OUT1'):
@@ -408,7 +387,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT:PROT:MODE " + str(parameter))
-        # print("VOLT:PROT:MODE " + str(parameter))
 
     @exception_handler
     def get_source_voltage_protection_mode(self, channel='OUT1'):
@@ -430,7 +408,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("POW:PROT " + str(parameter))
-        # print("POW:PROT " + str(parameter))
 
     @exception_handler
     def get_source_power_protection_state(self, channel='OUT1'):
@@ -456,7 +433,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("POW:PROT:LEV " + str(parameter))
-        # print("POW:PROT:LEV " + str(parameter))
 
     @exception_handler
     def get_source_power_protection_level(self, channel='OUT1'):
@@ -492,7 +468,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("POW:PROT:CLE")
-        # print("POW:PROT:CLE")
 
     @exception_handler
     def set_source_voltage_ainput_state(self, parameter='0', channel='OUT1'):
@@ -503,7 +478,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT:AINP " + str(parameter))
-        # print("VOLT:AINP " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ainput_state(self, channel='OUT1'):
@@ -522,7 +496,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         # [SOURce:]VOLTage:AINPut:INPut {VOLTage | CURRent}
         # Selects the input unit of the Analog In connector (terminal block) on the rear panel
         self.manager.write("VOLT:AINP:INP " + str(parameter))
-        # print("VOLT:AINP:INP " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ainput_input(self):
@@ -540,7 +513,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  LINear: Output voltage linear to the input voltage
         #  STEP: Reference value or zero depending on threshold
         self.manager.write("VOLT:AINP:MODE " + str(parameter))
-        # print("VOLT:AINP:MODE " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ainput_mode(self):
@@ -560,7 +532,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  MAX: 1.00E+01
         #  DEF: 1.0E+00
         self.manager.write("VOLT:AINP:THR " + str(parameter))
-        # print("VOLT:AINP:THR " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ainput_threshold(self):
@@ -579,7 +550,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT:RAMP " + str(parameter))
-        # print("VOLT:RAMP " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ramp_state(self, channel='OUT1'):
@@ -602,7 +572,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  MAX: 1.000E+01 (VOLT:RAMP:DUR 10)
         #  DEF: 1.00E-02 (VOLT:RAMP:DUR 0.01)
         self.manager.write("VOLT:RAMP:DUR " + str(parameter))
-        # print("VOLT:RAMP:DUR " + str(parameter))
 
     @exception_handler
     def get_source_voltage_ramp_duration(self):
@@ -624,7 +593,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT " + str(parameter))
-        # print("VOLT " + str(parameter) + " " + channel)
 
     @exception_handler
     def get_source_voltage_level_immediate_amplitude(self, channel='OUT1'):
@@ -646,7 +614,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         if not ret[0]:
             return ret
         self.manager.write("VOLT " + str(parameter))
-        # print("VOLT " + str(parameter))
 
     @exception_handler
     def set_source_voltage_level_step_increment(self, parameter='DEF'):
@@ -656,7 +623,6 @@ class PowerSupplyHMC804x(InstrumentDriver):
         #  <Numeric Value> 0.000E+00 to 3.2050E+01 (adjustable in 1mV steps)
         #  DEF: 1.000E+00
         self.manager.write("VOLT:STEP " + str(parameter))
-        # print("VOLT:STEP " + str(parameter))
 
     @exception_handler
     def get_source_voltage_level_step_increment(self, channel='OUT1'):

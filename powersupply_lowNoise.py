@@ -7,7 +7,6 @@ class PowerSupplyLowNoise:
 
     def __init__(self, address):
         try:
-            # self.ser = serial.serial_for_url(url, ...) ---> url – Device name, number or URL
             self.ser = serial.Serial(
                 port=address,
                 baudrate=115200,
@@ -16,7 +15,7 @@ class PowerSupplyLowNoise:
                 stopbits=STOPBITS_ONE
             )
         except serial.SerialException:
-            print("connection attempt error")
+            pass
 
     def close(self):
         self.ser.close()

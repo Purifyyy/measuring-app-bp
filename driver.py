@@ -21,15 +21,12 @@ class InstrumentDriver:
 
     def __init__(self, address):
         self.rm = pyvisa.ResourceManager('@py')
-        # self.manager = self.rm.open_resource(address)
-        # self.manager.read_termination = '\n'
-        # self.manager.write_termination = '\n'
-        # self.idn = ((self.manager.query("*IDN?")).split(","))[1]
+        self.manager = self.rm.open_resource(address)
+        self.idn = ((self.manager.query("*IDN?")).split(","))[1]
 
     def close(self):
-        # self.manager.close()
+        self.manager.close()
         self.rm.close()
-        # reset master/channels
 
     @property
     def idn(self):

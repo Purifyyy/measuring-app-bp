@@ -1,3 +1,5 @@
+import random
+
 import pyvisa
 import serial
 from serial import *
@@ -65,7 +67,6 @@ class SpinBox(QDoubleSpinBox):
             super().keyPressEvent(event)
 
 
-# Custom QComboBox, that comes with previously selected index, on currentIndexChanged signal
 class ComboBoxWithLast(QComboBox):
     selectedItemChanged = pyqtSignal(int, int)
 
@@ -105,6 +106,9 @@ class Application(QWidget):
         self.measured_power_supply = None
         self.file_writer = None
         self.output_file = None
+        self.x_axes = []
+        self.y_axes = []
+        self.plot_colors = []
 
         self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() + "QLabel, QPushButton, QComboBox, QTabWidget, "
                                                                 "QDoubleSpinBox, QLineEdit, QSpinBox"
@@ -190,12 +194,12 @@ class Application(QWidget):
             if available_power_supplies.get(device_chosen) is not None:
                 address = self.device_options.get(device_chosen)
                 if address is not None:
-                    print("pripajam " + device_chosen + " na adrese " + address)
                     self.power_supply = available_power_supplies[device_chosen](address)
                     self.add_device_tab(device_chosen)
                     self.is_power_supply_connected = True
                     self.powersupply_button.setText("Disconnect")
                     self.powersupply_menu.setDisabled(True)
+                    self.characteristics_button.setDisabled(True)
                     self.switch_tab_bar()
             else:
                 self.handle_error("No such power supply available!")
@@ -207,6 +211,8 @@ class Application(QWidget):
             self.tab_bar.removeTab(self.tab_bar.indexOf(self.power_supply_tab))
             self.power_supply_tab.close()
             self.powersupply_menu.setDisabled(False)
+            if not self.is_multimeter_connected:
+                self.characteristics_button.setDisabled(False)
             self.switch_tab_bar()
 
     def connect_multimeter(self):
@@ -215,12 +221,12 @@ class Application(QWidget):
             if available_multimeters.get(device_chosen) is not None:
                 address = self.device_options.get(device_chosen)
                 if address is not None:
-                    print("pripajam " + device_chosen + " na adrese " + address)
                     self.multimeter = available_multimeters[device_chosen](address)
                     self.add_device_tab(device_chosen)
                     self.is_multimeter_connected = True
                     self.multimeter_button.setText("Disconnect")
                     self.multimeter_menu.setDisabled(True)
+                    self.characteristics_button.setDisabled(True)
                     self.switch_tab_bar()
             else:
                 self.handle_error("No such multimeter available!")
@@ -232,6 +238,8 @@ class Application(QWidget):
             self.tab_bar.removeTab(self.tab_bar.indexOf(self.multimeter_tab))
             self.multimeter_tab.close()
             self.multimeter_menu.setDisabled(False)
+            if not self.is_power_supply_connected:
+                self.characteristics_button.setDisabled(False)
             self.switch_tab_bar()
 
     def add_measurement_tab(self):
@@ -299,13 +307,19 @@ class Application(QWidget):
                                                                              time_delay_input.value()))
             measurement_tab_layout.addWidget(start_button, 1, 3)
 
-            start_button = QPushButton("Stop")
-            start_button.clicked.connect(lambda: self.finish_measure_characteristic())
-            measurement_tab_layout.addWidget(start_button, 1, 4)
+            stop_button = QPushButton("Stop && Save")
+            stop_button.clicked.connect(lambda: self.finish_measure_characteristic())
+            measurement_tab_layout.addWidget(stop_button, 1, 4)
+
+            reset_button = QPushButton("Clear")
+            reset_button.clicked.connect(lambda: self.reset_plots())
+            measurement_tab_layout.addWidget(reset_button, 1, 2)
 
             self.measurement_tab.setLayout(measurement_tab_layout)
             self.tab_bar.addTab(self.measurement_tab, "Characteristic measurement")
             self.is_measurement_opened = True
+            self.powersupply_button.setDisabled(True)
+            self.multimeter_button.setDisabled(True)
         else:
             self.measured_multimeter.close()
             self.measured_power_supply.close()
@@ -315,9 +329,19 @@ class Application(QWidget):
             self.tab_bar.removeTab(self.tab_bar.indexOf(self.measurement_tab))
             self.measurement_tab.close()
             self.is_measurement_opened = False
+            self.powersupply_button.setDisabled(False)
+            self.multimeter_button.setDisabled(False)
         self.switch_tab_bar()
 
+    def reset_plots(self):
+        self.x_axes = []
+        self.y_axes = []
+        self.plot_colors = []
+
     def finish_measure_characteristic(self):
+        if self.output_file:
+            if not self.output_file.closed:
+                self.output_file.close()
         if self.measuring_loop is not None:
             if self.measuring_loop.event_source is not None:
                 self.measuring_loop.event_source.stop()
@@ -325,53 +349,63 @@ class Application(QWidget):
                 self.measured_power_supply.set_output_channel_state(0, "OUT1")
                 self.measured_power_supply.set_output_channel_state(0, "OUT2")
                 self.measured_power_supply.set_output_channel_state(0, "OUT3")
-                if self.output_file:
-                    if not self.output_file.closed:
-                        self.output_file.close()
+
+    def generate_color(self):
+        rand_num = lambda: random.randint(0, 255)
+        return '#%02X%02X%02X' % (rand_num(), rand_num(), rand_num())
 
     def animate_plot(self, i, xs, ys, voltage_list, delay, channel, previous_channel):
         self.measured_power_supply.set_source_voltage_level_immediate_amplitude(voltage_list[i], channel)
         time.sleep(delay)
-        measured_value = float(self.measured_multimeter.measure_current_ac()[2])
-
-        xs.append(voltage_list[i])
-        ys.append(measured_value)
+        measured_value = float(self.measured_multimeter.measure_current_dc()[2])
 
         self.file_writer.writerow([voltage_list[i], measured_value])
 
-        plt.cla()
-        plt.plot(xs, ys)
-
-        # plt.title('')
-        plt.ylabel('Current (A)')
-        plt.xlabel('Voltage (V)')
-        if len(voltage_list) == (i+1):
-            self.output_file.close()
+        xs.append(voltage_list[i])
+        ys.append(measured_value * 1000)
+        if i == 0:
+            self.x_axes.append(xs)
+            self.y_axes.append(ys)
+            self.plot_colors.append(self.generate_color())
+        for q in range(len(self.x_axes)):
+            plt.plot(self.x_axes[q], self.y_axes[q], color=self.plot_colors[q], marker='o')
+        plt.title('VACH', fontsize=18)
+        plt.ylabel('Current (mA)', fontsize=16)
+        plt.xlabel('Voltage (V)', fontsize=16)
+        plt.tight_layout()
+        if len(voltage_list) == (i + 1):
             self.measured_power_supply.set_output_channel_state(0, channel)
             self.measured_power_supply.set_output_channel(previous_channel)
+            self.measured_power_supply.set_output_master_state(0, channel)
+            if self.output_file:
+                if not self.output_file.closed:
+                    self.output_file.close()
             self.measuring_loop = None
 
     def measure_characteristic(self, channel, voltage_from, voltage_to, step, delay):
-        if step == 0:
+        if step == 0 or voltage_from >= voltage_to:
             return
         previous_channel = self.measured_power_supply.get_output_channel()[2]
         self.measured_power_supply.set_output_channel_state(1, channel)
+        self.measured_power_supply.set_output_master_state(1, channel)
         frame_count = int((voltage_to * 1000 - voltage_from * 1000) / (step * 1000)) + 1
         current_voltage = voltage_from
         voltage_list = []
         for x in range(frame_count):
             voltage_list.append(round(current_voltage, 3))
             current_voltage += step
+        print(voltage_list)
+        print(frame_count)
         plt.ion()
-        fig = plt.figure()
+        fig = plt.gcf()
         xs = []
         ys = []
-        self.output_file = open('../measurement_from_'+datetime.now().strftime("%d.%m.%Y-%H.%M.%S")+'.csv', 'a',
+        self.output_file = open('../measurement_from_' + datetime.now().strftime("%d.%m.%Y-%H.%M.%S") + '.csv', 'a',
                                 newline='')
-        self.file_writer = csv.writer(self.output_file)
-        # interval=1000 * delay
+        self.file_writer = csv.writer(self.output_file, delimiter=';')
+        plt.cla()
         self.measuring_loop = FuncAnimation(fig, fargs=(xs, ys, voltage_list, delay, channel, previous_channel),
-                                            init_func=lambda: None, repeat=False, blit=False, frames=frame_count,
+                                            init_func=lambda: None, repeat=False, frames=frame_count,
                                             func=self.animate_plot)
 
     def switch_tab_bar(self):
@@ -420,10 +454,6 @@ class Application(QWidget):
 
         device_box = QGroupBox("Channel options")
         device_box_layout = QGridLayout()
-
-        # first_fuse_switch.stateChanged.connect(
-        #     lambda: self.change_fuse_state(first_fuse_switch.checkState(), "OUT1", channel_box.currentText()))
-        # fuse_state_box_layout.addWidget(first_fuse_switch, 0, 2)
 
         channel_state_box = QGroupBox("State")
         channel_state_box_layout = QGridLayout()
@@ -535,8 +565,8 @@ class Application(QWidget):
         channel_settings_box_layout.addWidget(channel_box, 0, 1, 1, 2)
 
         channel_state = QPushButton("State")
-        channel_state.clicked.connect(lambda: self. send_command(lambda:
-                                                                 self.power_supply.get_output_channel_state(), "ps"))
+        channel_state.clicked.connect(lambda: self.send_command(lambda:
+                                                                self.power_supply.get_output_channel_state(), "ps"))
         channel_settings_box_layout.addWidget(channel_state, 1, 0)
         channel_activation = QPushButton("Activate")
         channel_activation.clicked.connect(lambda: self.send_command(
@@ -682,7 +712,6 @@ class Application(QWidget):
         ainput_box = QGroupBox("Analog In options")
         ainput_layout = QGridLayout()
         input_unit_label = QLabel("In unit:")
-        # input_unit_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         ainput_layout.addWidget(input_unit_label, 0, 0)
         ainput_unit = QComboBox()
         ainput_unit.addItem("Voltage", "VOLT")
@@ -1503,7 +1532,6 @@ class Application(QWidget):
         devices = {
             "HMC8012": "8012",
             "HMC8043": "8043"
-            # "LowNoise": "COM5"
         }
         user_input, was_success = self.get_user_input("pySerial device address input", "Enter address for LowNoise, "
                                                                                        "if connected")
@@ -1523,7 +1551,6 @@ class Application(QWidget):
         rm = pyvisa.ResourceManager('@py')
         resources = rm.list_resources()
         for res in resources:
-            # if res != "ASRL5::INSTR":
             try:
                 inst = rm.open_resource(res)
                 idn = inst.query("*IDN?").split(",")[1]
@@ -1534,4 +1561,11 @@ class Application(QWidget):
         rm.close()
         return devices
 
-# devices[((inst.query("*IDN?")).split(","))[1]] = res
+
+if __name__ == '__main__':
+    app = QApplication([])
+    ex = Application()
+    ex.show()
+    app.exec()
+
+
