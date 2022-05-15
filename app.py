@@ -1,5 +1,4 @@
 import random
-
 import pyvisa
 import serial
 from serial import *
@@ -1529,10 +1528,7 @@ class Application(QWidget):
         return cmds_list, cmds_box
 
     def get_device_options(self):
-        devices = {
-            "HMC8012": "8012",
-            "HMC8043": "8043"
-        }
+        devices = {}
         user_input, was_success = self.get_user_input("pySerial device address input", "Enter address for LowNoise, "
                                                                                        "if connected")
         if was_success:
@@ -1567,5 +1563,3 @@ if __name__ == '__main__':
     ex = Application()
     ex.show()
     app.exec()
-
-
